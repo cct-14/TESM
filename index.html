@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TESM — Terminal Equipment State Monitor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
+
+  header { padding: 16px 24px; border-bottom: 1px solid #1e2433; display: flex; align-items: center; justify-content: space-between; background: #0f1117; position: sticky; top: 0; z-index: 10; }
+  .logo { font-size: 18px; font-weight: 600; letter-spacing: 0.08em; color: #fff; }
+  .logo span { color: #3b82f6; }
+  .last-updated { font-size: 12px; color: #64748b; }
+
+  .status-bar { padding: 12px 24px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #1e2433; background: #0f1117; position: sticky; top: 53px; z-index: 9; }
+  .status-btn { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .status-btn.active, .status-btn:hover { filter: brightness(1.15); }
+  .s-all     { background: #1e293b; color: #94a3b8; border-color: #334155; }
+  .s-all.active { background: #334155; color: #e2e8f0; }
+  .s-avail   { background: #052e16; color: #4ade80; border-color: #166534; }
+  .s-avail.active { background: #166534; }
+  .s-running { background: #0c1a3a; color: #60a5fa; border-color: #1d4ed8; }
+  .s-running.active { background: #1d4ed8; }
+  .s-emerg   { background: #3b1200; color: #fb923c; border-color: #9a3412; }
+  .s-emerg.active { background: #9a3412; }
+  .s-oos     { background: #1a1a1a; color: #94a3b8; border-color: #475569; }
+  .s-oos.active { background: #475569; }
+  .s-planned { background: #2e1065; color: #c084fc; border-color: #7e22ce; }
+  .s-planned.active { background: #7e22ce; }
+  .s-damaged { background: #3b0000; color: #f87171; border-color: #991b1b; }
+  .s-damaged.active { background: #991b1b; }
+
+  .type-bar { padding: 10px 24px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid #1e2433; background: #0f1117; }
+  .type-btn { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid #1e2433; cursor: pointer; transition: all 0.15s; color: #94a3b8; background: transparent; }
+  .type-btn:hover { border-color: #334155; color: #e2e8f0; }
+  .type-btn.active { background: #1e2433; border-color: #3b82f6; color: #60a5fa; }
+  .type-count { font-size: 11px; margin-left: 4px; color: #64748b; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; padding: 20px 24px; }
+
+  .card { background: #131720; border: 1px solid #1e2433; border-radius: 10px; padding: 12px 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s; position: relative; }
+  .card:hover { border-color: #334155; background: #1a2030; }
+  .card.hidden { display: none; }
+
+  .card-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+  .card-icon svg { width: 40px; height: 40px; }
+  .card-name { font-size: 12px; font-weight: 500; color: #e2e8f0; text-align: center; letter-spacing: 0.02em; }
+  .card-status { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; text-align: center; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; position: absolute; top: 8px; right: 8px; }
+
+  .st-available  .dot { background: #4ade80; }
+  .st-running    .dot { background: #60a5fa; }
+  .st-emergency  .dot { background: #fb923c; box-shadow: 0 0 6px #fb923c88; }
+  .st-outofservice .dot { background: #475569; }
+  .st-planned    .dot { background: #c084fc; }
+  .st-damaged    .dot { background: #f87171; }
+
+  .st-available  .card-icon svg { stroke: #4ade80; }
+  .st-running    .card-icon svg { stroke: #60a5fa; }
+  .st-emergency  .card-icon svg { stroke: #fb923c; }
+  .st-outofservice .card-icon svg { stroke: #475569; }
+  .st-planned    .card-icon svg { stroke: #c084fc; }
+  .st-damaged    .card-icon svg { stroke: #f87171; }
+
+  .st-available  { border-color: #16653440; }
+  .st-running    { border-color: #1d4ed840; }
+  .st-emergency  { border-color: #9a341240; }
+  .st-outofservice { border-color: #33415540; }
+  .st-planned    { border-color: #7e22ce40; }
+  .st-damaged    { border-color: #991b1b40; }
+
+  .empty { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #475569; font-size: 14px; }
+
+  .count-badge { font-size: 12px; background: #1e2433; color: #64748b; padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TES<span>M</span></div>
+  <div class="last-updated" id="updated">Loading...</div>
+</header>
+
+<div class="status-bar" id="statusBar"></div>
+<div class="type-bar" id="typeBar"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const STATUS_META = {
+  'Available':          { cls: 'st-available',   btn: 's-avail',   label: 'Available' },
+  'Running':            { cls: 'st-running',      btn: 's-running',  label: 'Running' },
+  'Emergency Maintenance': { cls: 'st-emergency', btn: 's-emerg',   label: 'Emergency' },
+  'Out Of Service':     { cls: 'st-outofservice', btn: 's-oos',     label: 'Out Of Service' },
+  'Planned Maintenance':{ cls: 'st-planned',      btn: 's-planned', label: 'Planned' },
+  'Damaged':            { cls: 'st-damaged',      btn: 's-damaged', label: 'Damaged' },
+};
+
+const ICONS = {
+  TR:    `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="28" width="42" height="18" rx="3"/><rect x="10" y="20" width="22" height="10" rx="2"/><circle cx="16" cy="50" r="5"/><circle cx="38" cy="50" r="5"/><line x1="48" y1="36" x2="58" y2="36"/></svg>`,
+  RTG:   `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="8" width="44" height="6" rx="1"/><line x1="12" y1="14" x2="12" y2="52"/><line x1="52" y1="14" x2="52" y2="52"/><line x1="12" y1="36" x2="52" y2="36"/><rect x="24" y="36" width="16" height="10" rx="1"/><line x1="20" y1="52" x2="44" y2="52"/><circle cx="20" cy="54" r="3"/><circle cx="44" cy="54" r="3"/></svg>`,
+  CH:    `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="30" width="38" height="14" rx="2"/><rect x="8" y="22" width="18" height="10" rx="1"/><circle cx="14" cy="48" r="4"/><circle cx="34" cy="48" r="4"/><line x1="42" y1="36" x2="54" y2="36"/><line x1="50" y1="30" x2="54" y2="36"/></svg>`,
+  GC:    `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="48" height="8" rx="1"/><line x1="10" y1="14" x2="10" y2="54"/><line x1="54" y1="14" x2="54" y2="54"/><rect x="20" y="24" width="24" height="16" rx="1"/><line x1="32" y1="14" x2="32" y2="24"/><rect x="10" y="50" width="44" height="4" rx="1"/></svg>`,
+  FL:    `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="32" width="28" height="18" rx="2"/><rect x="36" y="18" width="6" height="32"/><rect x="28" y="20" width="14" height="6" rx="1"/><circle cx="16" cy="54" r="4"/><circle cx="30" cy="54" r="4"/><line x1="8" y1="32" x2="8" y2="54"/></svg>`,
+  ESL:   `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="6" width="44" height="8" rx="1"/><line x1="14" y1="14" x2="14" y2="54"/><line x1="50" y1="14" x2="50" y2="54"/><rect x="22" y="24" width="20" height="20" rx="1"/><line x1="32" y1="14" x2="32" y2="24"/><circle cx="14" cy="56" r="3"/><circle cx="50" cy="56" r="3"/></svg>`,
+  SL:    `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="24" width="52" height="10" rx="2"/><rect x="18" y="10" width="28" height="16" rx="1"/><circle cx="16" cy="48" r="5"/><circle cx="48" cy="48" r="5"/><line x1="32" y1="10" x2="32" y2="4"/></svg>`,
+  SP:    `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="26" width="44" height="16" rx="2"/><rect x="10" y="18" width="20" height="10" rx="1"/><circle cx="16" cy="48" r="5"/><circle cx="36" cy="48" r="5"/><line x1="50" y1="32" x2="58" y2="28"/><line x1="50" y1="38" x2="58" y2="38"/></svg>`,
+  RS:    `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="48" height="32" rx="3"/><line x1="20" y1="8" x2="20" y2="40"/><line x1="44" y1="8" x2="44" y2="40"/><circle cx="20" cy="52" r="5"/><circle cx="44" cy="52" r="5"/><line x1="8" y1="40" x2="8" y2="54"/><line x1="56" y1="40" x2="56" y2="54"/></svg>`,
+  PPG:   `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="48" height="36" rx="3"/><line x1="8" y1="24" x2="56" y2="24"/><circle cx="22" cy="17" r="3"/><line x1="18" y1="24" x2="18" y2="46"/><line x1="46" y1="24" x2="46" y2="46"/><circle cx="22" cy="50" r="4"/><circle cx="42" cy="50" r="4"/></svg>`,
+  ARMGC: `<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="52" height="10" rx="1"/><line x1="8" y1="16" x2="8" y2="56"/><line x1="56" y1="16" x2="56" y2="56"/><rect x="18" y="26" width="28" height="20" rx="1"/><line x1="32" y1="16" x2="32" y2="26"/><rect x="8" y="52" width="48" height="4" rx="1"/></svg>`,
+};
+
+const EQUIPMENT = [
+  {id:'ARMGC-01',type:'ARMGC',status:'Available'},{id:'ARMGC-02',type:'ARMGC',status:'Running'},{id:'ARMGC-03',type:'ARMGC',status:'Available'},{id:'ARMGC-05',type:'ARMGC',status:'Out Of Service'},
+  {id:'CH-035',type:'CH',status:'Available'},{id:'CH-042',type:'CH',status:'Running'},{id:'CH-044',type:'CH',status:'Running'},{id:'CH-048',type:'CH',status:'Available'},{id:'CH-050',type:'CH',status:'Running'},{id:'CH-052',type:'CH',status:'Available'},{id:'CH-055',type:'CH',status:'Running'},{id:'CH-057',type:'CH',status:'Out Of Service'},{id:'CH-059',type:'CH',status:'Running'},{id:'CH-063',type:'CH',status:'Available'},{id:'CH-064',type:'CH',status:'Running'},{id:'CH-065',type:'CH',status:'Damaged'},{id:'CH-066',type:'CH',status:'Running'},{id:'CH-067',type:'CH',status:'Available'},{id:'CH-069',type:'CH',status:'Emergency Maintenance'},{id:'CH-071',type:'CH',status:'Running'},{id:'CH-072',type:'CH',status:'Available'},{id:'CH-073',type:'CH',status:'Running'},{id:'CH-075',type:'CH',status:'Out Of Service'},{id:'CH-078',type:'CH',status:'Running'},{id:'CH-079',type:'CH',status:'Available'},{id:'CH-080',type:'CH',status:'Running'},{id:'CH-082',type:'CH',status:'Running'},{id:'CH-085',type:'CH',status:'Available'},{id:'CH-086',type:'CH',status:'Planned Maintenance'},{id:'CH-087',type:'CH',status:'Running'},{id:'CH-088',type:'CH',status:'Available'},{id:'CH-089',type:'CH',status:'Running'},{id:'CH-092',type:'CH',status:'Running'},{id:'CH-093',type:'CH',status:'Available'},{id:'CH-094',type:'CH',status:'Running'},{id:'CH-098',type:'CH',status:'Out Of Service'},{id:'CH-102',type:'CH',status:'Running'},{id:'CH-105',type:'CH',status:'Available'},{id:'CH-106',type:'CH',status:'Running'},{id:'CH-107',type:'CH',status:'Running'},{id:'CH-108',type:'CH',status:'Available'},{id:'CH-109',type:'CH',status:'Running'},{id:'CH-111',type:'CH',status:'Available'},{id:'CH-119',type:'CH',status:'Running'},{id:'CH-123',type:'CH',status:'Running'},{id:'CH-140',type:'CH',status:'Available'},
+  {id:'ESL-18',type:'ESL',status:'Running'},{id:'ESL-19',type:'ESL',status:'Available'},{id:'ESL-20',type:'ESL',status:'Running'},{id:'ESL-21',type:'ESL',status:'Out Of Service'},
+  {id:'FL-02',type:'FL',status:'Available'},{id:'FL-03',type:'FL',status:'Running'},{id:'FL-06',type:'FL',status:'Running'},{id:'FL-08',type:'FL',status:'Emergency Maintenance'},{id:'FL-09',type:'FL',status:'Available'},{id:'FL-10',type:'FL',status:'Running'},{id:'FL-13',type:'FL',status:'Available'},{id:'FL-15',type:'FL',status:'Running'},{id:'FL-16',type:'FL',status:'Out Of Service'},{id:'FL-17',type:'FL',status:'Running'},{id:'FL-18',type:'FL',status:'Available'},{id:'FL-19',type:'FL',status:'Running'},{id:'FL-102',type:'FL',status:'Running'},
+  {id:'GC-03/SP-T19',type:'GC',status:'Running'},{id:'GC-05/SP-T21',type:'GC',status:'Available'},{id:'GC-06/SP-T22',type:'GC',status:'Running'},{id:'GC-07/SP-T33',type:'GC',status:'Out Of Service'},{id:'GC-08/SP-T28',type:'GC',status:'Running'},{id:'GC-09/SP-T31',type:'GC',status:'Available'},{id:'GC-10/SP-T32',type:'GC',status:'Running'},{id:'GC-11/SP-T29',type:'GC',status:'Running'},{id:'GC-12/SP-TW01',type:'GC',status:'Planned Maintenance'},{id:'GC-13/SP-TW05',type:'GC',status:'Running'},{id:'GC-15/SP-TW04',type:'GC',status:'Available'},{id:'GC-16/SP-T25',type:'GC',status:'Running'},{id:'GC-17/SP-T23',type:'GC',status:'Running'},
+  {id:'PPG-CCT1',type:'PPG',status:'Available'},{id:'PPG-CCT6',type:'PPG',status:'Running'},{id:'PPG-CCT9',type:'PPG',status:'Running'},{id:'PPG-CCT2',type:'PPG',status:'Out Of Service'},{id:'PPG-CCT3',type:'PPG',status:'Running'},{id:'PPG-CCT4',type:'PPG',status:'Available'},{id:'PPG-CCT5',type:'PPG',status:'Planned Maintenance'},{id:'PPG-CCT7',type:'PPG',status:'Running'},{id:'PPG-CCT8',type:'PPG',status:'Running'},
+  {id:'RS-06',type:'RS',status:'Running'},{id:'RS-01',type:'RS',status:'Available'},{id:'RS-02',type:'RS',status:'Running'},{id:'RS-03',type:'RS',status:'Out Of Service'},{id:'RS-04',type:'RS',status:'Running'},{id:'RS-05',type:'RS',status:'Running'},
+  {id:'RTG-01',type:'RTG',status:'Available'},{id:'RTG-06',type:'RTG',status:'Running'},{id:'RTG-13',type:'RTG',status:'Running'},{id:'RTG-17',type:'RTG',status:'Emergency Maintenance'},{id:'RTG-18',type:'RTG',status:'Running'},{id:'RTG-21',type:'RTG',status:'Available'},{id:'RTG-24',type:'RTG',status:'Running'},{id:'RTG-25',type:'RTG',status:'Out Of Service'},{id:'RTG-27',type:'RTG',status:'Running'},{id:'RTG-32',type:'RTG',status:'Running'},{id:'RTG-39',type:'RTG',status:'Available'},
+  {id:'SL-07',type:'SL',status:'Running'},{id:'SL-15',type:'SL',status:'Available'},{id:'SL-01',type:'SL',status:'Running'},{id:'SL-02',type:'SL',status:'Running'},{id:'SL-03',type:'SL',status:'Out Of Service'},{id:'SL-04',type:'SL',status:'Running'},{id:'SL-05',type:'SL',status:'Running'},{id:'SL-06',type:'SL',status:'Available'},{id:'SL-08',type:'SL',status:'Running'},
+  {id:'SP-T20',type:'SP',status:'Running'},{id:'SP-TW02',type:'SP',status:'Available'},{id:'SP-01',type:'SP',status:'Running'},{id:'SP-02',type:'SP',status:'Running'},{id:'SP-03',type:'SP',status:'Out Of Service'},{id:'SP-04',type:'SP',status:'Running'},{id:'SP-05',type:'SP',status:'Damaged'},{id:'SP-06',type:'SP',status:'Running'},{id:'SP-07',type:'SP',status:'Available'},{id:'SP-08',type:'SP',status:'Running'},{id:'SP-09',type:'SP',status:'Running'},{id:'SP-10',type:'SP',status:'Running'},{id:'SP-11',type:'SP',status:'Running'},{id:'SP-12',type:'SP',status:'Available'},{id:'SP-13',type:'SP',status:'Running'},{id:'SP-14',type:'SP',status:'Running'},{id:'SP-15',type:'SP',status:'Running'},
+  {id:'TR-05',type:'TR',status:'Running'},{id:'TR-06',type:'TR',status:'Available'},{id:'TR-08',type:'TR',status:'Running'},{id:'TR-10',type:'TR',status:'Running'},{id:'TR-19',type:'TR',status:'Out Of Service'},{id:'TR-20/CH-053',type:'TR',status:'Running'},{id:'TR-25',type:'TR',status:'Available'},{id:'TR-27',type:'TR',status:'Running'},{id:'TR-36',type:'TR',status:'Running'},{id:'TR-40',type:'TR',status:'Running'},{id:'TR-42',type:'TR',status:'Emergency Maintenance'},{id:'TR-43',type:'TR',status:'Running'},{id:'TR-45/CH-110',type:'TR',status:'Available'},{id:'TR-50/CH-096',type:'TR',status:'Running'},{id:'TR-70',type:'TR',status:'Running'},{id:'TR-71',type:'TR',status:'Available'},{id:'TR-72',type:'TR',status:'Running'},{id:'TR-78',type:'TR',status:'Running'},{id:'TR-79',type:'TR',status:'Out Of Service'},{id:'TR-82',type:'TR',status:'Running'},{id:'TR-86',type:'TR',status:'Running'},{id:'TR-90/CH-131',type:'TR',status:'Available'},{id:'TR-92',type:'TR',status:'Running'},{id:'TR-94',type:'TR',status:'Running'},{id:'TR-100',type:'TR',status:'Running'},{id:'TR-103/CH-103',type:'TR',status:'Running'},{id:'TR-108',type:'TR',status:'Damaged'},{id:'TR-111/CH-125',type:'TR',status:'Running'},{id:'TR-118',type:'TR',status:'Available'},{id:'TR-122',type:'TR',status:'Running'},{id:'TR-130',type:'TR',status:'Running'},
+];
+
+let activeStatus = 'All';
+let activeType = 'All';
+
+function statusKey(s) {
+  return s.toLowerCase().replace(/\s+/g,'');
+}
+
+function render() {
+  const statCounts = {};
+  const typeCounts = {};
+  const types = ['All', ...new Set(EQUIPMENT.map(e=>e.type))];
+
+  EQUIPMENT.forEach(e => {
+    statCounts[e.status] = (statCounts[e.status]||0)+1;
+    typeCounts[e.type] = (typeCounts[e.type]||0)+1;
+  });
+
+  const statusBar = document.getElementById('statusBar');
+  const allCount = EQUIPMENT.length;
+  const statuses = ['All', ...Object.keys(STATUS_META)];
+  statusBar.innerHTML = statuses.map(s => {
+    const meta = STATUS_META[s];
+    const count = s==='All' ? allCount : (statCounts[s]||0);
+    const cls = s==='All' ? 's-all' : meta.btn;
+    const label = s==='All' ? 'All' : meta.label;
+    return `<button class="status-btn ${cls} ${activeStatus===s?'active':''}" onclick="filterStatus('${s}')">${label} <span class="count-badge">${count}</span></button>`;
+  }).join('');
+
+  const typeBar = document.getElementById('typeBar');
+  typeBar.innerHTML = types.map(t => {
+    const count = t==='All' ? allCount : (typeCounts[t]||0);
+    return `<button class="type-btn ${activeType===t?'active':''}" onclick="filterType('${t}')">${t} <span class="type-count">${count}</span></button>`;
+  }).join('');
+
+  const grid = document.getElementById('grid');
+  const filtered = EQUIPMENT.filter(e => {
+    const stMatch = activeStatus==='All' || e.status===activeStatus;
+    const tyMatch = activeType==='All' || e.type===activeType;
+    return stMatch && tyMatch;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty">No equipment matches this filter.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(e => {
+    const stMeta = STATUS_META[e.status] || STATUS_META['Out Of Service'];
+    const icon = ICONS[e.type] || ICONS['TR'];
+    return `<div class="card ${stMeta.cls}" title="${e.status}">
+      <div class="dot"></div>
+      <div class="card-icon">${icon}</div>
+      <div class="card-name">${e.id}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('updated').textContent = 'Demo data — ' + new Date().toLocaleTimeString();
+}
+
+function filterStatus(s) { activeStatus = s; render(); }
+function filterType(t) { activeType = t; render(); }
+
+render();
+</script>
+</body>
+</html>
