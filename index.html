@@ -25,7 +25,8 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
 .dash-header h1{font-size:18px;font-weight:600}
 .dash-time{font-size:12px;color:#6b7280}
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 24px}
-.kpi{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:14px 16px}
+.kpi{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:14px 16px;transition:border-color .15s}
+.kpi[onclick]:hover{border-color:#334155;background:#1c2128}
 .kpi-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
 .kpi-value{font-size:26px;font-weight:600}
 .kpi-sub{font-size:11px;color:#6b7280;margin-top:4px}
@@ -231,10 +232,10 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
     <div class="dash-time" id="dash-clock"></div>
   </div>
   <div class="kpi-row">
-    <div class="kpi danger"><div class="kpi-label">Emergency</div><div class="kpi-value">3</div><div class="kpi-sub">需要立即處理</div></div>
-    <div class="kpi warn"><div class="kpi-label">Out Of Service</div><div class="kpi-value">71</div><div class="kpi-sub">停機中</div></div>
-    <div class="kpi ok"><div class="kpi-label">Available</div><div class="kpi-value">38</div><div class="kpi-sub">可用中</div></div>
-    <div class="kpi blue"><div class="kpi-label">Running</div><div class="kpi-value">142</div><div class="kpi-sub">作業中</div></div>
+    <div class="kpi danger" onclick="goToMonitor('Emergency Maintenance')" style="cursor:pointer"><div class="kpi-label">Emergency</div><div class="kpi-value">3</div><div class="kpi-sub">需要立即處理</div></div>
+    <div class="kpi warn" onclick="goToMonitor('Out Of Service')" style="cursor:pointer"><div class="kpi-label">Out Of Service</div><div class="kpi-value">71</div><div class="kpi-sub">停機中</div></div>
+    <div class="kpi ok" onclick="goToMonitor('Available')" style="cursor:pointer"><div class="kpi-label">Available</div><div class="kpi-value">38</div><div class="kpi-sub">可用中</div></div>
+    <div class="kpi blue" onclick="goToMonitor('Running')" style="cursor:pointer"><div class="kpi-label">Running</div><div class="kpi-value">142</div><div class="kpi-sub">作業中</div></div>
   </div>
   <div class="section-title">目前搶修中</div>
   <div class="repair-table-wrap">
@@ -564,7 +565,15 @@ function buildDashboard(){
   document.getElementById('repair-tbody').innerHTML=REPAIR_DATA.map(r=>{
     const el=now-r.faultTime;const long=el>3600000;
     const cfg=STATUS_CFG[r.status];
-    return `<tr><td><div class="eq-badge">${r.id}</div></td><td><span class="status-pill ${cfg.pill}">${r.status}</span></td><td style="font-size:12px;color:#94a3b8">${fmtTime(r.faultTime)}</td><td><span class="timer${long?' long':''}" data-start="${r.faultTime}">${fmt(el)}</span></td><td class="prev-fault">${r.prevFault}</td><td class="prev-fault">${r.prevDur}</td><td style="font-size:12px;color:#6b7280">${r.crew}</td></tr>`;
+    return `<tr onclick="openModal('${r.id}','${r.type}','${r.status}')" style="cursor:pointer">
+      <td><div class="eq-badge">${r.id}</div></td>
+      <td><span class="status-pill ${cfg.pill}">${r.status}</span></td>
+      <td style="font-size:12px;color:#94a3b8">${fmtTime(r.faultTime)}</td>
+      <td><span class="timer${long?' long':''}" data-start="${r.faultTime}">${fmt(el)}</span></td>
+      <td class="prev-fault">${r.prevFault}</td>
+      <td class="prev-fault">${r.prevDur}</td>
+      <td style="font-size:12px;color:#6b7280">${r.crew}</td>
+    </tr>`;
   }).join('');
 }
 
@@ -604,7 +613,13 @@ function renderEq(){
   }
 }
 
-function setStatus(s){activeStatus=s;buildMonitor();}
+function goToMonitor(status){
+  activeStatus=status;
+  activeType='All';
+  const tab=document.querySelector('.nav-tab:nth-child(3)');
+  showPage('monitor',tab);
+  buildMonitor();
+}
 function setType(t){activeType=t;buildMonitor();}
 function filterEq(){renderEq();}
 function setView(v,btn){viewMode=v;document.querySelectorAll('.v-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderEq();}
@@ -612,11 +627,57 @@ function setView(v,btn){viewMode=v;document.querySelectorAll('.v-btn').forEach(b
 function openModal(id,type,status){
   document.getElementById('modal-name').textContent=id;
   document.getElementById('modal-type').textContent=`↕ ${type}  ⊙ CCT`;
-  document.getElementById('modal-history-rows').innerHTML=HISTORY.map(h=>{
+
+  const HISTORY_DETAIL=[
+    {status:'Out Of Service',time:'Jun 16, 2026, 01:48 AM',dur:'-',author:'luis.salazar',
+     notes:'引擎異常停機，等待搶修人員到場',fault:'引擎無法啟動',action:'通報搶修，設置警示'},
+    {status:'Emergency Maintenance',time:'Jun 15, 2026, 08:22 PM',dur:'5.4',author:'esteban.chiari',
+     notes:'更換燃油濾清器及噴油嘴，確認引擎運作正常',fault:'燃油系統堵塞',action:'更換燃油濾清器、清洗噴油嘴'},
+    {status:'Damaged',time:'Jun 15, 2026, 08:18 PM',dur:'0.1',author:'hazael.peñafiel',
+     notes:'發現燃油管線龜裂，立即停機',fault:'燃油管線龜裂',action:'立即停機，上報主管'},
+    {status:'Running',time:'Jun 15, 2026, 07:40 PM',dur:'0.6',author:'hazael.peñafiel',
+     notes:'正常作業中',fault:'-',action:'-'},
+    {status:'Available',time:'Jun 15, 2026, 06:51 PM',dur:'0.8',author:'ricardo.rodriguez',
+     notes:'完成日常保養，待命中',fault:'-',action:'完成日常檢查'},
+    {status:'Running',time:'Jun 15, 2026, 08:03 AM',dur:'10.8',author:'alfonso.hudson',
+     notes:'正常作業，裝卸貨物',fault:'-',action:'-'},
+    {status:'Available',time:'Jun 14, 2026, 09:46 AM',dur:'22.3',author:'cesar.escorcia',
+     notes:'待命中，無異常',fault:'-',action:'-'},
+  ];
+
+  document.getElementById('modal-history-rows').innerHTML=HISTORY_DETAIL.map((h,i)=>{
     const cfg=STATUS_CFG[h.status]||STATUS_CFG['Out Of Service'];
-    return `<div class="history-row"><div class="h-status"><span class="status-pill ${cfg.pill}">${h.status}</span></div><div class="h-time">${h.time}</div><div class="h-dur">${h.dur} hrs</div><div class="h-author">${h.author}</div></div>`;
+    return `<div class="history-row" onclick="toggleHistoryDetail(${i})" style="cursor:pointer;flex-direction:column;align-items:flex-start;gap:0">
+      <div style="display:flex;align-items:center;gap:12px;width:100%;padding:2px 0">
+        <div class="h-status"><span class="status-pill ${cfg.pill}">${h.status}</span></div>
+        <div class="h-time">${h.time}</div>
+        <div class="h-dur">${h.dur} hrs</div>
+        <div class="h-author">${h.author}</div>
+        <div style="margin-left:auto;color:#4b5563;font-size:12px">▶</div>
+      </div>
+      <div id="hist-detail-${i}" style="display:none;width:100%;margin-top:10px;padding:12px;background:#1c2128;border-radius:8px;border-left:3px solid ${cfg.pill==='sp-em'?'#fb923c':cfg.pill==='sp-av'?'#4ade80':cfg.pill==='sp-ru'?'#60a5fa':cfg.pill==='sp-dm'?'#f87171':'#475569'}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+          <div><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase;letter-spacing:.05em">故障原因</div><div style="color:#e2e8f0">${h.fault}</div></div>
+          <div><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase;letter-spacing:.05em">處理動作</div><div style="color:#e2e8f0">${h.action}</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px"><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase;letter-spacing:.05em">備註</div><div style="color:#94a3b8">${h.notes}</div></div>
+      </div>
+    </div>`;
   }).join('');
   document.getElementById('modal-overlay').classList.add('open');
+}
+
+function toggleHistoryDetail(i){
+  const el=document.getElementById('hist-detail-'+i);
+  const row=el.parentElement;
+  const arrow=row.querySelector('div[style*="▶"]');
+  if(el.style.display==='none'){
+    el.style.display='block';
+    if(arrow) arrow.textContent='▼';
+  } else {
+    el.style.display='none';
+    if(arrow) arrow.textContent='▶';
+  }
 }
 
 function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.remove('open');}
