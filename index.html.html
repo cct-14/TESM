@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TESM — Terminal Equipment State Monitor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column}
+
+/* NAV */
+nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:flex;align-items:center;gap:0;height:52px;position:sticky;top:0;z-index:100}
+.nav-logo{font-size:16px;font-weight:700;letter-spacing:.1em;color:#fff;margin-right:32px}
+.nav-logo span{color:#3b82f6}
+.nav-tab{padding:0 16px;height:52px;display:flex;align-items:center;font-size:13px;color:#8b949e;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.nav-tab:hover{color:#e2e8f0}
+.nav-tab.active{color:#e2e8f0;border-bottom-color:#3b82f6}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.alert-btn{background:#1f2937;border:1px solid #374151;color:#f59e0b;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.alert-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* PAGES */
+.page{display:none;flex:1}
+.page.active{display:flex;flex-direction:column}
+
+/* === DASHBOARD PAGE === */
+.dash-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.dash-header h1{font-size:18px;font-weight:600}
+.dash-time{font-size:12px;color:#6b7280}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 24px}
+.kpi{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:600}
+.kpi-sub{font-size:11px;color:#6b7280;margin-top:4px}
+.kpi.danger .kpi-value{color:#f87171}
+.kpi.warn .kpi-value{color:#fb923c}
+.kpi.ok .kpi-value{color:#4ade80}
+.kpi.blue .kpi-value{color:#60a5fa}
+
+.section-title{font-size:13px;font-weight:600;color:#8b949e;text-transform:uppercase;letter-spacing:.06em;padding:0 24px;margin-bottom:10px}
+
+/* REPAIR TABLE */
+.repair-table-wrap{padding:0 24px;margin-bottom:20px}
+.repair-table{width:100%;border-collapse:collapse;background:#161b22;border-radius:10px;overflow:hidden;border:1px solid #21262d}
+.repair-table th{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;padding:10px 14px;text-align:left;border-bottom:1px solid #21262d;background:#0d1117}
+.repair-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid #21262d}
+.repair-table tr:last-child td{border-bottom:none}
+.repair-table tr:hover td{background:#1c2128}
+.eq-badge{display:inline-flex;align-items:center;gap:6px;background:#1f2937;border:1px solid #374151;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:500}
+.timer{font-variant-numeric:tabular-nums;color:#fb923c;font-weight:600}
+.timer.long{color:#f87171;animation:pulse 1.5s infinite}
+.status-pill{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.sp-em{background:#431407;color:#fb923c}
+.sp-oos{background:#1f2937;color:#94a3b8}
+.sp-dm{background:#450a0a;color:#f87171}
+.sp-av{background:#052e16;color:#4ade80}
+.sp-ru{background:#0c1a3a;color:#60a5fa}
+.sp-pl{background:#2e1065;color:#c084fc}
+.prev-fault{font-size:11px;color:#6b7280}
+
+/* === MONITOR PAGE === */
+.monitor-controls{padding:12px 24px;border-bottom:1px solid #21262d;background:#161b22;position:sticky;top:52px;z-index:9}
+.status-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.s-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap}
+.s-btn.s-all{background:#21262d;color:#8b949e;border-color:#30363d}
+.s-btn.s-all.on{background:#30363d;color:#e2e8f0}
+.s-btn.s-av{background:#052e16;color:#4ade80;border-color:#166534}
+.s-btn.s-av.on{background:#166534}
+.s-btn.s-ru{background:#0c1a3a;color:#60a5fa;border-color:#1d4ed8}
+.s-btn.s-ru.on{background:#1d4ed8}
+.s-btn.s-em{background:#431407;color:#fb923c;border-color:#9a3412}
+.s-btn.s-em.on{background:#9a3412}
+.s-btn.s-oos{background:#1f2937;color:#94a3b8;border-color:#374151}
+.s-btn.s-oos.on{background:#374151}
+.s-btn.s-pl{background:#2e1065;color:#c084fc;border-color:#7e22ce}
+.s-btn.s-pl.on{background:#7e22ce}
+.s-btn.s-dm{background:#450a0a;color:#f87171;border-color:#991b1b}
+.s-btn.s-dm.on{background:#991b1b}
+.cnt{font-size:11px;background:#0d111780;padding:1px 6px;border-radius:8px;margin-left:3px}
+
+.type-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.t-btn{padding:3px 10px;border-radius:6px;font-size:12px;border:1px solid #21262d;cursor:pointer;color:#6b7280;background:transparent;transition:all .15s}
+.t-btn:hover{border-color:#30363d;color:#e2e8f0}
+.t-btn.on{background:#21262d;border-color:#3b82f6;color:#60a5fa}
+
+.view-toggle{display:flex;gap:4px;margin-left:auto}
+.v-btn{width:30px;height:30px;border:1px solid #21262d;border-radius:6px;background:transparent;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.v-btn.on{background:#21262d;color:#e2e8f0;border-color:#30363d}
+
+.search-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.eq-search{background:#21262d;border:1px solid #30363d;border-radius:8px;padding:7px 12px;font-size:13px;color:#e2e8f0;width:220px;outline:none}
+.eq-search::placeholder{color:#4b5563}
+
+/* GRID VIEW */
+.eq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px;padding:16px 24px}
+.eq-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .15s;position:relative}
+.eq-card:hover{background:#1c2128;border-color:#30363d}
+.eq-dot{width:7px;height:7px;border-radius:50%;position:absolute;top:7px;right:7px}
+.eq-icon{width:38px;height:38px;display:flex;align-items:center;justify-content:center}
+.eq-icon svg{width:36px;height:36px}
+.eq-name{font-size:11px;font-weight:500;text-align:center;color:#e2e8f0;line-height:1.3}
+
+/* LIST VIEW */
+.eq-list{padding:0 24px 24px;display:flex;flex-direction:column;gap:0}
+.eq-list-item{background:#161b22;border:1px solid #21262d;border-radius:0;padding:10px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .15s;border-bottom:none}
+.eq-list-item:first-child{border-radius:10px 10px 0 0}
+.eq-list-item:last-child{border-radius:0 0 10px 10px;border-bottom:1px solid #21262d}
+.eq-list-item:only-child{border-radius:10px;border-bottom:1px solid #21262d}
+.eq-list-item:hover{background:#1c2128}
+.list-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.list-name{font-size:13px;font-weight:500;min-width:120px}
+.list-type{font-size:11px;color:#6b7280;min-width:50px}
+.list-status{margin-left:auto}
+
+/* STATUS COLORS */
+.c-av .eq-dot,.c-av .list-dot{background:#4ade80}
+.c-av .eq-icon svg{stroke:#4ade80}
+.c-av{border-color:#16653440!important}
+.c-ru .eq-dot,.c-ru .list-dot{background:#60a5fa}
+.c-ru .eq-icon svg{stroke:#60a5fa}
+.c-ru{border-color:#1d4ed840!important}
+.c-em .eq-dot,.c-em .list-dot{background:#fb923c}
+.c-em .eq-icon svg{stroke:#fb923c}
+.c-em{border-color:#9a341260!important}
+.c-oos .eq-dot,.c-oos .list-dot{background:#475569}
+.c-oos .eq-icon svg{stroke:#475569}
+.c-oos{border-color:#33415540!important}
+.c-pl .eq-dot,.c-pl .list-dot{background:#c084fc}
+.c-pl .eq-icon svg{stroke:#c084fc}
+.c-pl{border-color:#7e22ce40!important}
+.c-dm .eq-dot,.c-dm .list-dot{background:#f87171}
+.c-dm .eq-icon svg{stroke:#f87171}
+.c-dm{border-color:#991b1b40!important}
+
+/* === DETAIL MODAL === */
+.modal-overlay{position:fixed;inset:0;background:#00000088;z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:#161b22;border:1px solid #21262d;border-radius:14px;width:100%;max-width:700px;overflow:hidden}
+.modal-head{padding:20px 24px 16px;border-bottom:1px solid #21262d;display:flex;align-items:flex-start;gap:16px}
+.modal-eq-name{font-size:22px;font-weight:700}
+.modal-eq-type{font-size:13px;color:#6b7280;margin-top:2px}
+.modal-close{margin-left:auto;background:transparent;border:none;color:#6b7280;font-size:20px;cursor:pointer;padding:4px;line-height:1}
+.modal-status-btns{padding:14px 24px;border-bottom:1px solid #21262d;display:flex;gap:8px;flex-wrap:wrap}
+.modal-status-btns span{font-size:12px;color:#6b7280;margin-right:4px;align-self:center}
+.mark-btn{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;border:none;cursor:pointer}
+.modal-history{padding:16px 24px}
+.modal-history h3{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.history-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #21262d11}
+.history-row:last-child{border-bottom:none}
+.h-status{min-width:140px}
+.h-time{font-size:12px;color:#6b7280;min-width:160px}
+.h-dur{font-size:12px;color:#6b7280;min-width:60px}
+.h-author{font-size:12px;color:#4b5563}
+
+/* STATS PAGE */
+.stats-page{padding:20px 24px;flex:1}
+.stats-page h1{font-size:18px;font-weight:600;margin-bottom:16px}
+.stats-filters{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.stats-filters select,.stats-filters input{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:7px 12px;font-size:13px;color:#e2e8f0;outline:none}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:#161b22;border:1px solid #21262d;border-radius:12px;padding:18px}
+.stat-card h3{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.big-num{font-size:36px;font-weight:700;margin-bottom:4px}
+.big-num.green{color:#4ade80}
+.big-num.blue{color:#60a5fa}
+.big-num.orange{color:#fb923c}
+.stat-sub{font-size:12px;color:#6b7280}
+.bar-chart{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.bar-row{display:flex;align-items:center;gap:8px}
+.bar-label{font-size:11px;color:#6b7280;min-width:60px}
+.bar-track{flex:1;background:#21262d;border-radius:4px;height:8px;overflow:hidden}
+.bar-fill{height:8px;border-radius:4px;transition:width .3s}
+
+/* MAINTENANCE PAGE */
+.maint-page{padding:20px 24px;flex:1}
+.maint-page h1{font-size:18px;font-weight:600;margin-bottom:16px}
+.maint-filters{display:flex;gap:8px;margin-bottom:16px}
+.maint-tab{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid #21262d;cursor:pointer;color:#6b7280;background:transparent}
+.maint-tab.on{background:#21262d;color:#e2e8f0;border-color:#30363d}
+.maint-list{display:flex;flex-direction:column;gap:8px}
+.maint-item{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+.maint-item-info{flex:1}
+.maint-item-name{font-size:14px;font-weight:500;margin-bottom:3px}
+.maint-item-desc{font-size:12px;color:#6b7280}
+.maint-item-meta{font-size:11px;color:#4b5563;margin-top:4px}
+.approve-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#1d4ed8;color:#fff}
+.reject-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#21262d;color:#6b7280;margin-left:6px}
+.approved-badge{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;background:#052e16;color:#4ade80}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">TES<span>M</span></div>
+  <div class="nav-tab active" onclick="showPage('dashboard',this)">搶修儀表板</div>
+  <div class="nav-tab" onclick="showPage('monitor',this)">即時監控</div>
+  <div class="nav-tab" onclick="showPage('stats',this)">統計分析</div>
+  <div class="nav-tab" onclick="showPage('maintenance',this)">保養計畫</div>
+  <div class="nav-right">
+    <div class="alert-btn"><span class="alert-dot"></span> 2 alerts</div>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="dash-header">
+    <h1>搶修儀表板</h1>
+    <div class="dash-time" id="dash-clock"></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi danger"><div class="kpi-label">Emergency</div><div class="kpi-value">3</div><div class="kpi-sub">需要立即處理</div></div>
+    <div class="kpi warn"><div class="kpi-label">Out Of Service</div><div class="kpi-value">71</div><div class="kpi-sub">停機中</div></div>
+    <div class="kpi ok"><div class="kpi-label">Available</div><div class="kpi-value">38</div><div class="kpi-sub">可用中</div></div>
+    <div class="kpi blue"><div class="kpi-label">Running</div><div class="kpi-value">142</div><div class="kpi-sub">作業中</div></div>
+  </div>
+  <div class="section-title">目前搶修中</div>
+  <div class="repair-table-wrap">
+    <table class="repair-table">
+      <thead>
+        <tr>
+          <th>設備</th>
+          <th>狀態</th>
+          <th>故障時間</th>
+          <th>已維修</th>
+          <th>上次故障</th>
+          <th>上次維修時長</th>
+          <th>搶修人員</th>
+        </tr>
+      </thead>
+      <tbody id="repair-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MONITOR -->
+<div class="page" id="page-monitor">
+  <div class="monitor-controls">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <input class="eq-search" placeholder="Search equipment..." oninput="filterEq()" id="eq-search">
+      <div class="view-toggle">
+        <button class="v-btn on" onclick="setView('grid',this)" title="Grid">⊞</button>
+        <button class="v-btn" onclick="setView('list',this)" title="List">☰</button>
+      </div>
+    </div>
+    <div class="status-bar" id="status-bar"></div>
+    <div class="type-bar" id="type-bar"></div>
+  </div>
+  <div id="eq-container"></div>
+</div>
+
+<!-- STATS -->
+<div class="page" id="page-stats">
+  <div class="stats-page">
+    <h1>統計分析</h1>
+    <div class="stats-filters">
+      <select><option>2026年6月</option><option>2026年5月</option><option>2026年4月</option></select>
+      <select><option>所有種類</option><option>TR</option><option>RTG</option><option>CH</option><option>GC</option></select>
+      <select><option>所有設備</option></select>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>妥善率</h3>
+        <div class="big-num green">94.2%</div>
+        <div class="stat-sub">目標 ≥ 92%</div>
+        <div class="bar-chart" style="margin-top:12px">
+          <div class="bar-row"><div class="bar-label">TR</div><div class="bar-track"><div class="bar-fill" style="width:96%;background:#4ade80"></div></div><span style="font-size:11px;color:#4ade80">96%</span></div>
+          <div class="bar-row"><div class="bar-label">RTG</div><div class="bar-track"><div class="bar-fill" style="width:91%;background:#fb923c"></div></div><span style="font-size:11px;color:#fb923c">91%</span></div>
+          <div class="bar-row"><div class="bar-label">CH</div><div class="bar-track"><div class="bar-fill" style="width:97%;background:#4ade80"></div></div><span style="font-size:11px;color:#4ade80">97%</span></div>
+          <div class="bar-row"><div class="bar-label">GC</div><div class="bar-track"><div class="bar-fill" style="width:89%;background:#f87171"></div></div><span style="font-size:11px;color:#f87171">89%</span></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <h3>故障率</h3>
+        <div class="big-num orange">5.8%</div>
+        <div class="stat-sub">本月共 47 次故障</div>
+        <div class="bar-chart" style="margin-top:12px">
+          <div class="bar-row"><div class="bar-label">週一</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:#fb923c"></div></div><span style="font-size:11px;color:#6b7280">8</span></div>
+          <div class="bar-row"><div class="bar-label">週二</div><div class="bar-track"><div class="bar-fill" style="width:22%;background:#fb923c"></div></div><span style="font-size:11px;color:#6b7280">6</span></div>
+          <div class="bar-row"><div class="bar-label">週三</div><div class="bar-track"><div class="bar-fill" style="width:40%;background:#fb923c"></div></div><span style="font-size:11px;color:#6b7280">11</span></div>
+          <div class="bar-row"><div class="bar-label">週四</div><div class="bar-track"><div class="bar-fill" style="width:26%;background:#fb923c"></div></div><span style="font-size:11px;color:#6b7280">7</span></div>
+          <div class="bar-row"><div class="bar-label">週五</div><div class="bar-track"><div class="bar-fill" style="width:56%;background:#f87171"></div></div><span style="font-size:11px;color:#6b7280">15</span></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <h3>可用率</h3>
+        <div class="big-num blue">89.1%</div>
+        <div class="stat-sub">平均維修時間 2.3 hrs</div>
+        <div class="bar-chart" style="margin-top:12px">
+          <div class="bar-row"><div class="bar-label">< 1hr</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:#60a5fa"></div></div><span style="font-size:11px;color:#60a5fa">28</span></div>
+          <div class="bar-row"><div class="bar-label">1-3hr</div><div class="bar-track"><div class="bar-fill" style="width:32%;background:#60a5fa"></div></div><span style="font-size:11px;color:#60a5fa">15</span></div>
+          <div class="bar-row"><div class="bar-label">3-8hr</div><div class="bar-track"><div class="bar-fill" style="width:10%;background:#fb923c"></div></div><span style="font-size:11px;color:#fb923c">4</span></div>
+          <div class="bar-row"><div class="bar-label">> 8hr</div><div class="bar-track"><div class="bar-fill" style="width:4%;background:#f87171"></div></div><span style="font-size:11px;color:#f87171">0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAINTENANCE -->
+<div class="page" id="page-maintenance">
+  <div class="maint-page">
+    <h1>保養計畫</h1>
+    <div class="maint-filters">
+      <button class="maint-tab on">全部 (5)</button>
+      <button class="maint-tab">待核准 (2)</button>
+      <button class="maint-tab">已核准 (2)</button>
+      <button class="maint-tab">進行中 (1)</button>
+    </div>
+    <div class="maint-list">
+      <div class="maint-item">
+        <div style="width:10px;height:10px;border-radius:50%;background:#fb923c;flex-shrink:0"></div>
+        <div class="maint-item-info">
+          <div class="maint-item-name">RTG-06 — 定期保養 PM-500hr</div>
+          <div class="maint-item-desc">更換液壓油、檢查鋼纜磨損、校正吊具</div>
+          <div class="maint-item-meta">申請人：esteban.chiari　申請時間：2026/06/17 09:30　預計時長：8 hrs</div>
+        </div>
+        <div>
+          <button class="approve-btn">✓ 核准</button>
+          <button class="reject-btn">✗ 拒絕</button>
+        </div>
+      </div>
+      <div class="maint-item">
+        <div style="width:10px;height:10px;border-radius:50%;background:#fb923c;flex-shrink:0"></div>
+        <div class="maint-item-info">
+          <div class="maint-item-name">TR-42 — 引擎大修</div>
+          <div class="maint-item-desc">更換活塞環、重新調整噴油嘴</div>
+          <div class="maint-item-meta">申請人：luis.salazar　申請時間：2026/06/18 14:10　預計時長：24 hrs</div>
+        </div>
+        <div>
+          <button class="approve-btn">✓ 核准</button>
+          <button class="reject-btn">✗ 拒絕</button>
+        </div>
+      </div>
+      <div class="maint-item">
+        <div style="width:10px;height:10px;border-radius:50%;background:#4ade80;flex-shrink:0"></div>
+        <div class="maint-item-info">
+          <div class="maint-item-name">CH-069 — 煞車系統更換</div>
+          <div class="maint-item-desc">前後煞車片更換、煞車油更換</div>
+          <div class="maint-item-meta">申請人：alfredo.bony　核准人：manager.cct　核准時間：2026/06/16</div>
+        </div>
+        <div><span class="approved-badge">✓ 已核准</span></div>
+      </div>
+      <div class="maint-item">
+        <div style="width:10px;height:10px;border-radius:50%;background:#4ade80;flex-shrink:0"></div>
+        <div class="maint-item-info">
+          <div class="maint-item-name">FL-08 — 叉架更換</div>
+          <div class="maint-item-desc">叉架磨損超標，需全部更換</div>
+          <div class="maint-item-meta">申請人：hazael.peñafiel　核准人：manager.cct　核准時間：2026/06/15</div>
+        </div>
+        <div><span class="approved-badge">✓ 已核准</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-eq-name" id="modal-name"></div>
+        <div class="modal-eq-type" id="modal-type"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-status-btns">
+      <span>Mark as:</span>
+      <button class="mark-btn" style="background:#166534;color:#4ade80">Available</button>
+      <button class="mark-btn" style="background:#1d4ed8;color:#60a5fa">Running</button>
+      <button class="mark-btn" style="background:#9a3412;color:#fb923c">Emergency</button>
+      <button class="mark-btn" style="background:#374151;color:#94a3b8">Out Of Service</button>
+      <button class="mark-btn" style="background:#7e22ce;color:#c084fc">Planned</button>
+      <button class="mark-btn" style="background:#991b1b;color:#f87171">Damaged</button>
+    </div>
+    <div class="modal-history">
+      <h3>Status History</h3>
+      <div id="modal-history-rows"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS = {
+  TR:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="28" width="42" height="18" rx="3"/><rect x="10" y="20" width="22" height="10" rx="2"/><circle cx="16" cy="50" r="5"/><circle cx="38" cy="50" r="5"/><line x1="48" y1="36" x2="58" y2="36"/></svg>`,
+  RTG:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="8" width="44" height="6" rx="1"/><line x1="12" y1="14" x2="12" y2="52"/><line x1="52" y1="14" x2="52" y2="52"/><line x1="12" y1="36" x2="52" y2="36"/><rect x="24" y="36" width="16" height="10" rx="1"/><line x1="20" y1="52" x2="44" y2="52"/><circle cx="20" cy="54" r="3"/><circle cx="44" cy="54" r="3"/></svg>`,
+  CH:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="30" width="38" height="14" rx="2"/><rect x="8" y="22" width="18" height="10" rx="1"/><circle cx="14" cy="48" r="4"/><circle cx="34" cy="48" r="4"/><line x1="42" y1="36" x2="54" y2="36"/><line x1="50" y1="30" x2="54" y2="36"/></svg>`,
+  GC:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="6" width="48" height="8" rx="1"/><line x1="10" y1="14" x2="10" y2="54"/><line x1="54" y1="14" x2="54" y2="54"/><rect x="20" y="24" width="24" height="16" rx="1"/><line x1="32" y1="14" x2="32" y2="24"/><rect x="10" y="50" width="44" height="4" rx="1"/></svg>`,
+  FL:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="32" width="28" height="18" rx="2"/><rect x="36" y="18" width="6" height="32"/><rect x="28" y="20" width="14" height="6" rx="1"/><circle cx="16" cy="54" r="4"/><circle cx="30" cy="54" r="4"/></svg>`,
+  ESL:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="6" width="44" height="8" rx="1"/><line x1="14" y1="14" x2="14" y2="54"/><line x1="50" y1="14" x2="50" y2="54"/><rect x="22" y="24" width="20" height="20" rx="1"/><line x1="32" y1="14" x2="32" y2="24"/><circle cx="14" cy="56" r="3"/><circle cx="50" cy="56" r="3"/></svg>`,
+  SL:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="24" width="52" height="10" rx="2"/><rect x="18" y="10" width="28" height="16" rx="1"/><circle cx="16" cy="48" r="5"/><circle cx="48" cy="48" r="5"/></svg>`,
+  SP:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="26" width="44" height="16" rx="2"/><rect x="10" y="18" width="20" height="10" rx="1"/><circle cx="16" cy="48" r="5"/><circle cx="36" cy="48" r="5"/><line x1="50" y1="32" x2="58" y2="28"/></svg>`,
+  RS:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="48" height="32" rx="3"/><line x1="20" y1="8" x2="20" y2="40"/><line x1="44" y1="8" x2="44" y2="40"/><circle cx="20" cy="52" r="5"/><circle cx="44" cy="52" r="5"/></svg>`,
+  PPG:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="10" width="48" height="36" rx="3"/><line x1="8" y1="24" x2="56" y2="24"/><circle cx="22" cy="17" r="3"/><line x1="18" y1="24" x2="18" y2="46"/><line x1="46" y1="24" x2="46" y2="46"/><circle cx="22" cy="50" r="4"/><circle cx="42" cy="50" r="4"/></svg>`,
+  ARMGC:`<svg viewBox="0 0 64 64" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="52" height="10" rx="1"/><line x1="8" y1="16" x2="8" y2="56"/><line x1="56" y1="16" x2="56" y2="56"/><rect x="18" y="26" width="28" height="20" rx="1"/><line x1="32" y1="16" x2="32" y2="26"/><rect x="8" y="52" width="48" height="4" rx="1"/></svg>`,
+};
+
+const STATUS_CFG={
+  'Available':{cls:'c-av',pill:'sp-av',btn:'s-av'},
+  'Running':{cls:'c-ru',pill:'sp-ru',btn:'s-ru'},
+  'Emergency Maintenance':{cls:'c-em',pill:'sp-em',btn:'s-em'},
+  'Out Of Service':{cls:'c-oos',pill:'sp-oos',btn:'s-oos'},
+  'Planned Maintenance':{cls:'c-pl',pill:'sp-pl',btn:'s-pl'},
+  'Damaged':{cls:'c-dm',pill:'sp-dm',btn:'s-dm'},
+};
+
+const EQUIPMENT=[
+  {id:'ARMGC-01',type:'ARMGC',status:'Available'},{id:'ARMGC-02',type:'ARMGC',status:'Running'},{id:'ARMGC-03',type:'ARMGC',status:'Available'},{id:'ARMGC-05',type:'ARMGC',status:'Out Of Service'},
+  {id:'CH-035',type:'CH',status:'Available'},{id:'CH-042',type:'CH',status:'Running'},{id:'CH-044',type:'CH',status:'Running'},{id:'CH-048',type:'CH',status:'Available'},{id:'CH-050',type:'CH',status:'Running'},{id:'CH-052',type:'CH',status:'Available'},{id:'CH-055',type:'CH',status:'Running'},{id:'CH-057',type:'CH',status:'Out Of Service'},{id:'CH-059',type:'CH',status:'Running'},{id:'CH-063',type:'CH',status:'Available'},{id:'CH-064',type:'CH',status:'Running'},{id:'CH-065',type:'CH',status:'Damaged'},{id:'CH-066',type:'CH',status:'Running'},{id:'CH-067',type:'CH',status:'Available'},{id:'CH-069',type:'CH',status:'Emergency Maintenance'},{id:'CH-071',type:'CH',status:'Running'},{id:'CH-072',type:'CH',status:'Available'},{id:'CH-073',type:'CH',status:'Running'},{id:'CH-075',type:'CH',status:'Out Of Service'},{id:'CH-078',type:'CH',status:'Running'},{id:'CH-079',type:'CH',status:'Available'},{id:'CH-080',type:'CH',status:'Running'},{id:'CH-082',type:'CH',status:'Running'},{id:'CH-085',type:'CH',status:'Available'},{id:'CH-086',type:'CH',status:'Planned Maintenance'},{id:'CH-087',type:'CH',status:'Running'},{id:'CH-088',type:'CH',status:'Available'},{id:'CH-089',type:'CH',status:'Running'},{id:'CH-092',type:'CH',status:'Running'},{id:'CH-093',type:'CH',status:'Available'},{id:'CH-094',type:'CH',status:'Running'},{id:'CH-098',type:'CH',status:'Out Of Service'},{id:'CH-102',type:'CH',status:'Running'},{id:'CH-105',type:'CH',status:'Available'},{id:'CH-106',type:'CH',status:'Running'},{id:'CH-107',type:'CH',status:'Running'},{id:'CH-108',type:'CH',status:'Available'},{id:'CH-109',type:'CH',status:'Running'},{id:'CH-111',type:'CH',status:'Available'},{id:'CH-119',type:'CH',status:'Running'},{id:'CH-123',type:'CH',status:'Running'},{id:'CH-140',type:'CH',status:'Available'},
+  {id:'ESL-18',type:'ESL',status:'Running'},{id:'ESL-19',type:'ESL',status:'Available'},{id:'ESL-20',type:'ESL',status:'Running'},{id:'ESL-21',type:'ESL',status:'Out Of Service'},
+  {id:'FL-02',type:'FL',status:'Available'},{id:'FL-03',type:'FL',status:'Running'},{id:'FL-06',type:'FL',status:'Running'},{id:'FL-08',type:'FL',status:'Emergency Maintenance'},{id:'FL-09',type:'FL',status:'Available'},{id:'FL-10',type:'FL',status:'Running'},{id:'FL-13',type:'FL',status:'Available'},{id:'FL-15',type:'FL',status:'Running'},{id:'FL-16',type:'FL',status:'Out Of Service'},{id:'FL-17',type:'FL',status:'Running'},{id:'FL-18',type:'FL',status:'Available'},{id:'FL-19',type:'FL',status:'Running'},{id:'FL-102',type:'FL',status:'Running'},
+  {id:'GC-03/SP-T19',type:'GC',status:'Running'},{id:'GC-05/SP-T21',type:'GC',status:'Available'},{id:'GC-06/SP-T22',type:'GC',status:'Running'},{id:'GC-07/SP-T33',type:'GC',status:'Out Of Service'},{id:'GC-08/SP-T28',type:'GC',status:'Running'},{id:'GC-09/SP-T31',type:'GC',status:'Available'},{id:'GC-10/SP-T32',type:'GC',status:'Running'},{id:'GC-11/SP-T29',type:'GC',status:'Running'},{id:'GC-12/SP-TW01',type:'GC',status:'Planned Maintenance'},{id:'GC-13/SP-TW05',type:'GC',status:'Running'},{id:'GC-15/SP-TW04',type:'GC',status:'Available'},{id:'GC-16/SP-T25',type:'GC',status:'Running'},{id:'GC-17/SP-T23',type:'GC',status:'Running'},
+  {id:'PPG-CCT1',type:'PPG',status:'Available'},{id:'PPG-CCT2',type:'PPG',status:'Running'},{id:'PPG-CCT3',type:'PPG',status:'Running'},{id:'PPG-CCT4',type:'PPG',status:'Out Of Service'},{id:'PPG-CCT5',type:'PPG',status:'Running'},{id:'PPG-CCT6',type:'PPG',status:'Running'},{id:'PPG-CCT7',type:'PPG',status:'Available'},{id:'PPG-CCT8',type:'PPG',status:'Planned Maintenance'},{id:'PPG-CCT9',type:'PPG',status:'Running'},
+  {id:'RS-01',type:'RS',status:'Running'},{id:'RS-02',type:'RS',status:'Available'},{id:'RS-03',type:'RS',status:'Running'},{id:'RS-04',type:'RS',status:'Out Of Service'},{id:'RS-05',type:'RS',status:'Running'},{id:'RS-06',type:'RS',status:'Running'},
+  {id:'RTG-01',type:'RTG',status:'Available'},{id:'RTG-06',type:'RTG',status:'Out Of Service'},{id:'RTG-13',type:'RTG',status:'Running'},{id:'RTG-17',type:'RTG',status:'Emergency Maintenance'},{id:'RTG-18',type:'RTG',status:'Running'},{id:'RTG-21',type:'RTG',status:'Available'},{id:'RTG-24',type:'RTG',status:'Running'},{id:'RTG-25',type:'RTG',status:'Out Of Service'},{id:'RTG-27',type:'RTG',status:'Running'},{id:'RTG-32',type:'RTG',status:'Running'},{id:'RTG-39',type:'RTG',status:'Available'},
+  {id:'SL-01',type:'SL',status:'Running'},{id:'SL-02',type:'SL',status:'Available'},{id:'SL-03',type:'SL',status:'Running'},{id:'SL-04',type:'SL',status:'Running'},{id:'SL-05',type:'SL',status:'Out Of Service'},{id:'SL-06',type:'SL',status:'Running'},{id:'SL-07',type:'SL',status:'Available'},{id:'SL-08',type:'SL',status:'Running'},{id:'SL-15',type:'SL',status:'Running'},
+  {id:'SP-01',type:'SP',status:'Running'},{id:'SP-02',type:'SP',status:'Available'},{id:'SP-03',type:'SP',status:'Running'},{id:'SP-04',type:'SP',status:'Running'},{id:'SP-05',type:'SP',status:'Damaged'},{id:'SP-06',type:'SP',status:'Running'},{id:'SP-07',type:'SP',status:'Available'},{id:'SP-08',type:'SP',status:'Running'},{id:'SP-09',type:'SP',status:'Running'},{id:'SP-10',type:'SP',status:'Running'},{id:'SP-11',type:'SP',status:'Running'},{id:'SP-12',type:'SP',status:'Available'},{id:'SP-13',type:'SP',status:'Running'},{id:'SP-14',type:'SP',status:'Running'},{id:'SP-15',type:'SP',status:'Running'},{id:'SP-T20',type:'SP',status:'Running'},{id:'SP-TW02',type:'SP',status:'Available'},
+  {id:'TR-05',type:'TR',status:'Running'},{id:'TR-06',type:'TR',status:'Available'},{id:'TR-08',type:'TR',status:'Running'},{id:'TR-10',type:'TR',status:'Running'},{id:'TR-19',type:'TR',status:'Out Of Service'},{id:'TR-20/CH-053',type:'TR',status:'Running'},{id:'TR-25',type:'TR',status:'Available'},{id:'TR-27',type:'TR',status:'Running'},{id:'TR-36',type:'TR',status:'Running'},{id:'TR-40',type:'TR',status:'Running'},{id:'TR-42',type:'TR',status:'Emergency Maintenance'},{id:'TR-43',type:'TR',status:'Running'},{id:'TR-45/CH-110',type:'TR',status:'Available'},{id:'TR-50/CH-096',type:'TR',status:'Running'},{id:'TR-70',type:'TR',status:'Running'},{id:'TR-71',type:'TR',status:'Available'},{id:'TR-72',type:'TR',status:'Running'},{id:'TR-78',type:'TR',status:'Running'},{id:'TR-79',type:'TR',status:'Out Of Service'},{id:'TR-82',type:'TR',status:'Running'},{id:'TR-86',type:'TR',status:'Running'},{id:'TR-90/CH-131',type:'TR',status:'Available'},{id:'TR-92',type:'TR',status:'Running'},{id:'TR-94',type:'TR',status:'Running'},{id:'TR-100',type:'TR',status:'Running'},{id:'TR-103/CH-103',type:'TR',status:'Running'},{id:'TR-108',type:'TR',status:'Damaged'},{id:'TR-111/CH-125',type:'TR',status:'Running'},{id:'TR-118',type:'TR',status:'Available'},{id:'TR-122',type:'TR',status:'Running'},{id:'TR-130',type:'TR',status:'Running'},
+];
+
+const REPAIR_DATA=[
+  {id:'TR-42',type:'TR',status:'Emergency Maintenance',faultTime:Date.now()-5580000,prevFault:'2026/05/28 14:20',prevDur:'1.8 hrs',crew:'luis.salazar'},
+  {id:'FL-08',type:'FL',status:'Emergency Maintenance',faultTime:Date.now()-2340000,prevFault:'2026/06/01 09:10',prevDur:'0.5 hrs',crew:'hazael.peñafiel'},
+  {id:'RTG-17',type:'RTG',status:'Emergency Maintenance',faultTime:Date.now()-4200000,prevFault:'2026/05/15 22:40',prevDur:'3.2 hrs',crew:'esteban.chiari'},
+];
+
+const HISTORY_SAMPLE=[
+  {status:'Out Of Service',time:'Jun 16, 2026, 01:48 AM',dur:'-',author:'luis.salazar'},
+  {status:'Emergency Maintenance',time:'Jun 15, 2026, 08:22 PM',dur:'5.4',author:'esteban.chiari'},
+  {status:'Damaged',time:'Jun 15, 2026, 08:18 PM',dur:'0.1',author:'hazael.peñafiel'},
+  {status:'Running',time:'Jun 15, 2026, 07:40 PM',dur:'0.6',author:'hazael.peñafiel'},
+  {status:'Available',time:'Jun 15, 2026, 06:51 PM',dur:'0.8',author:'ricardo.rodriguez'},
+  {status:'Running',time:'Jun 15, 2026, 08:03 AM',dur:'10.8',author:'alfonso.hudson'},
+  {status:'Available',time:'Jun 14, 2026, 09:46 AM',dur:'22.3',author:'cesar.escorcia'},
+];
+
+let activeStatus='All', activeType='All', viewMode='grid';
+
+function fmt(ms){
+  const s=Math.floor(ms/1000);const m=Math.floor(s/60);const h=Math.floor(m/60);
+  return h>0?`${h}h ${m%60}m`:`${m}m`;
+}
+
+function fmtTime(ts){
+  return new Date(ts).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+function buildDashboard(){
+  const tbody=document.getElementById('repair-tbody');
+  const now=Date.now();
+  tbody.innerHTML=REPAIR_DATA.map(r=>{
+    const elapsed=now-r.faultTime;
+    const long=elapsed>3600000;
+    const cfg=STATUS_CFG[r.status];
+    return `<tr>
+      <td><div class="eq-badge">${r.id}</div></td>
+      <td><span class="status-pill ${cfg.pill}">${r.status}</span></td>
+      <td style="font-size:12px;color:#94a3b8">${fmtTime(r.faultTime)}</td>
+      <td><span class="timer${long?' long':''}" data-start="${r.faultTime}">${fmt(elapsed)}</span></td>
+      <td class="prev-fault">${r.prevFault}</td>
+      <td class="prev-fault">${r.prevDur}</td>
+      <td style="font-size:12px;color:#6b7280">${r.crew}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildMonitor(){
+  const statuses=Object.keys(STATUS_CFG);
+  const types=['All',...new Set(EQUIPMENT.map(e=>e.type))];
+  const counts={};EQUIPMENT.forEach(e=>{counts[e.status]=(counts[e.status]||0)+1;});
+  const typeCounts={};EQUIPMENT.forEach(e=>{typeCounts[e.type]=(typeCounts[e.type]||0)+1;});
+
+  document.getElementById('status-bar').innerHTML=
+    `<button class="s-btn s-all${activeStatus==='All'?' on':''}" onclick="setStatus('All')">All <span class="cnt">${EQUIPMENT.length}</span></button>`+
+    statuses.map(s=>{
+      const c=STATUS_CFG[s];
+      return `<button class="s-btn ${c.btn}${activeStatus===s?' on':''}" onclick="setStatus('${s}')">${s.replace(' Maintenance','').replace('Emergency','Emrg')} <span class="cnt">${counts[s]||0}</span></button>`;
+    }).join('');
+
+  document.getElementById('type-bar').innerHTML=
+    types.map(t=>`<button class="t-btn${activeType===t?' on':''}" onclick="setType('${t}')">${t} <span style="color:#4b5563">${t==='All'?EQUIPMENT.length:typeCounts[t]||0}</span></button>`).join('');
+
+  renderEquipment();
+}
+
+function renderEquipment(){
+  const search=document.getElementById('eq-search').value.toLowerCase();
+  const filtered=EQUIPMENT.filter(e=>{
+    const stOk=activeStatus==='All'||e.status===activeStatus;
+    const tyOk=activeType==='All'||e.type===activeType;
+    const srOk=!search||e.id.toLowerCase().includes(search)||e.type.toLowerCase().includes(search);
+    return stOk&&tyOk&&srOk;
+  });
+  const container=document.getElementById('eq-container');
+  if(viewMode==='grid'){
+    container.innerHTML=`<div class="eq-grid">${filtered.map(e=>{
+      const cfg=STATUS_CFG[e.status]||STATUS_CFG['Out Of Service'];
+      const icon=ICONS[e.type]||ICONS['TR'];
+      return `<div class="eq-card ${cfg.cls}" onclick="openModal('${e.id}','${e.type}','${e.status}')">
+        <div class="eq-dot"></div>
+        <div class="eq-icon">${icon}</div>
+        <div class="eq-name">${e.id}</div>
+      </div>`;
+    }).join('')}</div>`;
+  } else {
+    container.innerHTML=`<div class="eq-list">${filtered.map(e=>{
+      const cfg=STATUS_CFG[e.status]||STATUS_CFG['Out Of Service'];
+      return `<div class="eq-list-item ${cfg.cls}" onclick="openModal('${e.id}','${e.type}','${e.status}')">
+        <div class="list-dot"></div>
+        <div class="list-name">${e.id}</div>
+        <div class="list-type">${e.type}</div>
+        <div class="list-status"><span class="status-pill ${cfg.pill}">${e.status}</span></div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+}
+
+function setStatus(s){activeStatus=s;buildMonitor();}
+function setType(t){activeType=t;buildMonitor();}
+function filterEq(){renderEquipment();}
+function setView(v,btn){
+  viewMode=v;
+  document.querySelectorAll('.v-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderEquipment();
+}
+
+function openModal(id,type,status){
+  document.getElementById('modal-name').textContent=id;
+  document.getElementById('modal-type').textContent=`↕ ${type}  ⊙ CCT`;
+  const rows=HISTORY_SAMPLE.map(h=>{
+    const cfg=STATUS_CFG[h.status]||STATUS_CFG['Out Of Service'];
+    return `<div class="history-row">
+      <div class="h-status"><span class="status-pill ${cfg.pill}">${h.status}</span></div>
+      <div class="h-time">${h.time}</div>
+      <div class="h-dur">${h.dur} hrs</div>
+      <div class="h-author">${h.author}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-history-rows').innerHTML=rows;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e){
+  if(!e||e.target===document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function showPage(id,tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  tab.classList.add('active');
+}
+
+function updateClock(){
+  const now=new Date();
+  document.getElementById('dash-clock').textContent=now.toLocaleString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.querySelectorAll('.timer[data-start]').forEach(el=>{
+    const elapsed=Date.now()-parseInt(el.dataset.start);
+    el.textContent=fmt(elapsed);
+    if(elapsed>3600000)el.classList.add('long');
+  });
+}
+
+buildDashboard();
+buildMonitor();
+updateClock();
+setInterval(updateClock,1000);
+</script>
+</body>
+</html>
