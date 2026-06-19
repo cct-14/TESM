@@ -185,6 +185,30 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
 .approval-connector.done{background:#166534}
 .approve-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#1d4ed8;color:#fff}
 .reject-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#21262d;color:#6b7280;margin-left:6px}
+
+/* APPROVAL MODAL */
+.ap-step-indicator{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:80px}
+.ap-ind-circle{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;border:2px solid #21262d;color:#6b7280;background:#0d1117;transition:all .2s}
+.ap-ind-circle.active{border-color:#3b82f6;color:#60a5fa;background:#0c1a3a}
+.ap-ind-circle.done{border-color:#166534;color:#4ade80;background:#052e16}
+.ap-ind-circle.rejected{border-color:#991b1b;color:#f87171;background:#450a0a}
+.ap-ind-label{font-size:11px;color:#6b7280;font-weight:500}
+.ap-ind-line{flex:1;height:2px;background:#21262d;margin-bottom:20px;transition:background .3s}
+.ap-ind-line.done{background:#166534}
+.ap-stage{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ap-stage-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.ap-stage-sub{font-size:12px;color:#6b7280;margin-bottom:16px}
+.ap-info-row{display:flex;gap:24px;margin-bottom:12px;flex-wrap:wrap}
+.ap-info-item{display:flex;flex-direction:column;gap:2px}
+.ap-info-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+.ap-info-value{font-size:13px;color:#e2e8f0;font-weight:500}
+.ap-prev-action{background:#1c2128;border:1px solid #21262d;border-radius:8px;padding:10px 14px;margin-bottom:12px}
+.ap-prev-action-title{font-size:11px;color:#6b7280;margin-bottom:4px}
+.ap-prev-action-content{font-size:13px;color:#4ade80}
+.ap-comment{width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:10px 12px;font-size:13px;color:#e2e8f0;resize:none;outline:none;font-family:inherit;margin-top:8px}
+.ap-done-banner{background:#052e16;border:1px solid #166534;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:10px;color:#4ade80;font-weight:500}
+.ap-rejected-banner{background:#450a0a;border:1px solid #991b1b;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:10px;color:#f87171;font-weight:500}
 </style>
 </head>
 <body>
@@ -283,130 +307,49 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
   <div class="maint-page">
     <h1>保養計畫</h1>
     <div class="maint-filters">
-      <button class="maint-tab on">全部 (4)</button>
-      <button class="maint-tab">待核准 (2)</button>
-      <button class="maint-tab">已核准 (1)</button>
-      <button class="maint-tab">被拒 (1)</button>
+      <button class="maint-tab on" onclick="filterMaint('all',this)">全部 (4)</button>
+      <button class="maint-tab" onclick="filterMaint('pending',this)">待核准 (2)</button>
+      <button class="maint-tab" onclick="filterMaint('approved',this)">已核准 (1)</button>
+      <button class="maint-tab" onclick="filterMaint('rejected',this)">被拒 (1)</button>
     </div>
-    <div class="maint-list">
+    <div class="maint-list" id="maint-list"></div>
+  </div>
+</div>
 
-      <!-- 全部通過 -->
-      <div class="maint-item">
-        <div style="width:10px;height:10px;border-radius:50%;background:#4ade80;flex-shrink:0"></div>
-        <div class="maint-item-info">
-          <div class="maint-item-name">CH-069 — 煞車系統更換</div>
-          <div class="maint-item-desc">前後煞車片更換、煞車油更換</div>
-          <div class="maint-item-meta">申請人：alfredo.bony　2026/06/16 08:00　預計時長：6 hrs</div>
-        </div>
-        <div class="approval-flow">
-          <div class="approval-step">
-            <div class="approval-circle done">✓</div>
-            <div class="approval-label done">Leader</div>
-            <div class="approval-by">r.rodriguez</div>
-          </div>
-          <div class="approval-connector done"></div>
-          <div class="approval-step">
-            <div class="approval-circle done">✓</div>
-            <div class="approval-label done">Dep. Head</div>
-            <div class="approval-by">a.hudson</div>
-          </div>
-          <div class="approval-connector done"></div>
-          <div class="approval-step">
-            <div class="approval-circle done">✓</div>
-            <div class="approval-label done">Op. Head</div>
-            <div class="approval-by">c.escorcia</div>
-          </div>
-        </div>
+<!-- 簽核 MODAL -->
+<div class="modal-overlay" id="approval-overlay" onclick="closeApproval(event)">
+  <div class="modal" id="approval-box" style="max-width:600px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-eq-name" id="ap-title"></div>
+        <div class="modal-eq-type" id="ap-desc"></div>
       </div>
-
-      <!-- Leader 通過，等 Dep. Head -->
-      <div class="maint-item">
-        <div style="width:10px;height:10px;border-radius:50%;background:#fb923c;flex-shrink:0"></div>
-        <div class="maint-item-info">
-          <div class="maint-item-name">RTG-06 — 定期保養 PM-500hr</div>
-          <div class="maint-item-desc">更換液壓油、檢查鋼纜磨損、校正吊具</div>
-          <div class="maint-item-meta">申請人：esteban.chiari　2026/06/17 09:30　預計時長：8 hrs</div>
-        </div>
-        <div class="approval-flow">
-          <div class="approval-step">
-            <div class="approval-circle done">✓</div>
-            <div class="approval-label done">Leader</div>
-            <div class="approval-by">r.rodriguez</div>
-          </div>
-          <div class="approval-connector done"></div>
-          <div class="approval-step">
-            <div class="approval-circle pending">?</div>
-            <div class="approval-label pending">Dep. Head</div>
-            <div class="approval-by">待核准</div>
-          </div>
-          <div class="approval-connector"></div>
-          <div class="approval-step">
-            <div class="approval-circle waiting">—</div>
-            <div class="approval-label waiting">Op. Head</div>
-            <div class="approval-by">等待中</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 剛提交，等 Leader -->
-      <div class="maint-item">
-        <div style="width:10px;height:10px;border-radius:50%;background:#fb923c;flex-shrink:0"></div>
-        <div class="maint-item-info">
-          <div class="maint-item-name">TR-42 — 引擎大修</div>
-          <div class="maint-item-desc">更換活塞環、重新調整噴油嘴</div>
-          <div class="maint-item-meta">申請人：luis.salazar　2026/06/18 14:10　預計時長：24 hrs</div>
-        </div>
-        <div class="approval-flow">
-          <div class="approval-step">
-            <div class="approval-circle pending">?</div>
-            <div class="approval-label pending">Leader</div>
-            <div class="approval-by">待核准</div>
-          </div>
-          <div class="approval-connector"></div>
-          <div class="approval-step">
-            <div class="approval-circle waiting">—</div>
-            <div class="approval-label waiting">Dep. Head</div>
-            <div class="approval-by">等待中</div>
-          </div>
-          <div class="approval-connector"></div>
-          <div class="approval-step">
-            <div class="approval-circle waiting">—</div>
-            <div class="approval-label waiting">Op. Head</div>
-            <div class="approval-by">等待中</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Dep. Head 拒絕 -->
-      <div class="maint-item">
-        <div style="width:10px;height:10px;border-radius:50%;background:#f87171;flex-shrink:0"></div>
-        <div class="maint-item-info">
-          <div class="maint-item-name">FL-08 — 叉架更換</div>
-          <div class="maint-item-desc">叉架磨損超標，需全部更換</div>
-          <div class="maint-item-meta">申請人：hazael.peñafiel　2026/06/15 10:00　預計時長：12 hrs</div>
-        </div>
-        <div class="approval-flow">
-          <div class="approval-step">
-            <div class="approval-circle done">✓</div>
-            <div class="approval-label done">Leader</div>
-            <div class="approval-by">r.rodriguez</div>
-          </div>
-          <div class="approval-connector done"></div>
-          <div class="approval-step">
-            <div class="approval-circle rejected">✗</div>
-            <div class="approval-label rejected">Dep. Head</div>
-            <div class="approval-by">已拒絕</div>
-          </div>
-          <div class="approval-connector"></div>
-          <div class="approval-step">
-            <div class="approval-circle waiting">—</div>
-            <div class="approval-label waiting">Op. Head</div>
-            <div class="approval-by">等待中</div>
-          </div>
-        </div>
-      </div>
-
+      <button class="modal-close" onclick="closeApproval()">✕</button>
     </div>
+
+    <!-- 步驟指示器 -->
+    <div style="padding:16px 24px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:0">
+      <div class="ap-step-indicator" id="ap-ind-1">
+        <div class="ap-ind-circle" id="ap-ind-c1">1</div>
+        <div class="ap-ind-label">Leader</div>
+      </div>
+      <div class="ap-ind-line" id="ap-ind-l1"></div>
+      <div class="ap-step-indicator" id="ap-ind-2">
+        <div class="ap-ind-circle" id="ap-ind-c2">2</div>
+        <div class="ap-ind-label">Dep. Head</div>
+      </div>
+      <div class="ap-ind-line" id="ap-ind-l2"></div>
+      <div class="ap-step-indicator" id="ap-ind-3">
+        <div class="ap-ind-circle" id="ap-ind-c3">3</div>
+        <div class="ap-ind-label">Op. Head</div>
+      </div>
+    </div>
+
+    <!-- 簽核內容區 -->
+    <div id="ap-content" style="padding:20px 24px"></div>
+
+    <!-- 操作按鈕 -->
+    <div id="ap-actions" style="padding:14px 24px;border-top:1px solid #21262d;display:flex;gap:10px"></div>
   </div>
 </div>
 
@@ -678,6 +621,149 @@ function openModal(id,type,status){
 
 function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.remove('open');}
 function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');tab.classList.add('active');}
+
+const MAINT_DATA=[
+  {id:'CH-069',title:'CH-069 — 煞車系統更換',desc:'前後煞車片更換、煞車油更換',meta:'申請人：alfredo.bony　2026/06/16 08:00　預計時長：6 hrs',applicant:'alfredo.bony',date:'2026/06/16 08:00',duration:'6 hrs',approvals:[{role:'Leader',status:'done',by:'r.rodriguez',time:'2026/06/16 09:10',comment:'確認需要更換'},{role:'Dep. Head',status:'done',by:'a.hudson',time:'2026/06/16 11:30',comment:'批准'},{role:'Op. Head',status:'done',by:'c.escorcia',time:'2026/06/16 14:00',comment:'同意執行'}]},
+  {id:'RTG-06',title:'RTG-06 — 定期保養 PM-500hr',desc:'更換液壓油、檢查鋼纜磨損、校正吊具',meta:'申請人：esteban.chiari　2026/06/17 09:30　預計時長：8 hrs',applicant:'esteban.chiari',date:'2026/06/17 09:30',duration:'8 hrs',approvals:[{role:'Leader',status:'done',by:'r.rodriguez',time:'2026/06/17 10:15',comment:'同意，安排時間'},{role:'Dep. Head',status:'pending',by:'',time:'',comment:''},{role:'Op. Head',status:'waiting',by:'',time:'',comment:''}]},
+  {id:'TR-42',title:'TR-42 — 引擎大修',desc:'更換活塞環、重新調整噴油嘴',meta:'申請人：luis.salazar　2026/06/18 14:10　預計時長：24 hrs',applicant:'luis.salazar',date:'2026/06/18 14:10',duration:'24 hrs',approvals:[{role:'Leader',status:'pending',by:'',time:'',comment:''},{role:'Dep. Head',status:'waiting',by:'',time:'',comment:''},{role:'Op. Head',status:'waiting',by:'',time:'',comment:''}]},
+  {id:'FL-08',title:'FL-08 — 叉架更換',desc:'叉架磨損超標，需全部更換',meta:'申請人：hazael.peñafiel　2026/06/15 10:00　預計時長：12 hrs',applicant:'hazael.peñafiel',date:'2026/06/15 10:00',duration:'12 hrs',approvals:[{role:'Leader',status:'done',by:'r.rodriguez',time:'2026/06/15 11:20',comment:'確認磨損嚴重'},{role:'Dep. Head',status:'rejected',by:'a.hudson',time:'2026/06/15 15:00',comment:'預算不足，下月再安排'},{role:'Op. Head',status:'waiting',by:'',time:'',comment:''}]},
+];
+
+let currentMaintId=null;
+
+function getOverallStatus(approvals){
+  if(approvals.some(a=>a.status==='rejected')) return 'rejected';
+  if(approvals.every(a=>a.status==='done')) return 'approved';
+  return 'pending';
+}
+
+function renderMaintList(filter){
+  const list=document.getElementById('maint-list');
+  const dots={pending:'#fb923c',approved:'#4ade80',rejected:'#f87171'};
+  list.innerHTML=MAINT_DATA.filter(m=>{
+    const s=getOverallStatus(m.approvals);
+    return filter==='all'||filter===s;
+  }).map(m=>{
+    const s=getOverallStatus(m.approvals);
+    const dot=dots[s]||'#fb923c';
+    const ap=m.approvals;
+    return `<div class="maint-item" onclick="openApproval('${m.id}')" style="cursor:pointer">
+      <div style="width:10px;height:10px;border-radius:50%;background:${dot};flex-shrink:0"></div>
+      <div class="maint-item-info">
+        <div class="maint-item-name">${m.title}</div>
+        <div class="maint-item-desc">${m.desc}</div>
+        <div class="maint-item-meta">${m.meta}</div>
+      </div>
+      <div class="approval-flow">
+        ${ap.map((a,i)=>`
+          ${i>0?`<div class="approval-connector${ap[i-1].status==='done'?' done':''}"></div>`:''}
+          <div class="approval-step">
+            <div class="approval-circle ${a.status}">${a.status==='done'?'✓':a.status==='rejected'?'✗':a.status==='pending'?'?':'—'}</div>
+            <div class="approval-label ${a.status}">${a.role}</div>
+            <div class="approval-by">${a.by||'等待中'}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterMaint(filter,btn){
+  document.querySelectorAll('.maint-tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderMaintList(filter);
+}
+
+function openApproval(id){
+  currentMaintId=id;
+  const m=MAINT_DATA.find(x=>x.id===id);
+  document.getElementById('ap-title').textContent=m.title;
+  document.getElementById('ap-desc').textContent=m.desc;
+  renderApprovalModal(m);
+  document.getElementById('approval-overlay').classList.add('open');
+}
+
+function renderApprovalModal(m){
+  const ap=m.approvals;
+  const activeIdx=ap.findIndex(a=>a.status==='pending'||a.status==='waiting');
+  const currentStep=activeIdx===-1?3:activeIdx;
+
+  ['1','2','3'].forEach((n,i)=>{
+    const circle=document.getElementById('ap-ind-c'+n);
+    const a=ap[i];
+    circle.className='ap-ind-circle '+a.status;
+    circle.textContent=a.status==='done'?'✓':a.status==='rejected'?'✗':n;
+    if(i<2){
+      const line=document.getElementById('ap-ind-l'+n);
+      line.className='ap-ind-line'+(ap[i].status==='done'?' done':'');
+    }
+  });
+
+  const content=document.getElementById('ap-content');
+  const actions=document.getElementById('ap-actions');
+
+  const roleLabels=['Leader','Dep. Head','Op. Head'];
+  let html='';
+  let actionsHtml='';
+
+  if(getOverallStatus(ap)==='approved'){
+    html=`<div class="ap-done-banner">✓ 所有簽核已通過，可以執行保養</div>`;
+  } else if(getOverallStatus(ap)==='rejected'){
+    const rejIdx=ap.findIndex(a=>a.status==='rejected');
+    html=`<div class="ap-rejected-banner">✗ 被 ${roleLabels[rejIdx]} 拒絕：${ap[rejIdx].comment}</div>`;
+  }
+
+  ap.forEach((a,i)=>{
+    const isActive=a.status==='pending';
+    const isDone=a.status==='done';
+    const isRejected=a.status==='rejected';
+    if(a.status==='waiting') return;
+
+    html+=`<div class="ap-stage" style="margin-top:16px;padding:14px;background:#161b22;border:1px solid ${isActive?'#3b82f640':isDone?'#16653440':isRejected?'#99161640':'#21262d'};border-radius:10px">
+      <div class="ap-stage-title" style="color:${isActive?'#60a5fa':isDone?'#4ade80':isRejected?'#f87171':'#e2e8f0'}">第 ${i+1} 層 — ${a.role}</div>
+      <div class="ap-stage-sub">${isActive?'等待簽核中':isDone?`已核准　${a.time}　by ${a.by}`:isRejected?`已拒絕　${a.time}　by ${a.by}`:''}</div>
+      ${(isDone||isRejected)&&a.comment?`<div style="font-size:12px;color:#94a3b8;background:#21262d;padding:8px 12px;border-radius:6px">💬 ${a.comment}</div>`:''}
+      ${isActive?`<textarea class="ap-comment" id="ap-comment-${i}" rows="2" placeholder="備註（選填）"></textarea>`:''}
+    </div>`;
+
+    if(isActive){
+      actionsHtml=`
+        <button class="approve-btn" onclick="doApprove(${i})">✓ 核准</button>
+        <button class="reject-btn" onclick="doReject(${i})">✗ 拒絕</button>`;
+    }
+  });
+
+  content.innerHTML=`
+    <div class="ap-info-row">
+      <div class="ap-info-item"><div class="ap-info-label">申請人</div><div class="ap-info-value">${m.applicant}</div></div>
+      <div class="ap-info-item"><div class="ap-info-label">申請時間</div><div class="ap-info-value">${m.date}</div></div>
+      <div class="ap-info-item"><div class="ap-info-label">預計時長</div><div class="ap-info-value">${m.duration}</div></div>
+    </div>${html}`;
+  actions.innerHTML=actionsHtml;
+}
+
+function doApprove(idx){
+  const m=MAINT_DATA.find(x=>x.id===currentMaintId);
+  const comment=document.getElementById('ap-comment-'+idx)?.value||'';
+  m.approvals[idx]={...m.approvals[idx],status:'done',by:'manager.cct',time:new Date().toLocaleString('zh-TW'),comment:comment||'核准'};
+  if(idx+1<m.approvals.length) m.approvals[idx+1].status='pending';
+  renderApprovalModal(m);
+  renderMaintList('all');
+}
+
+function doReject(idx){
+  const m=MAINT_DATA.find(x=>x.id===currentMaintId);
+  const comment=document.getElementById('ap-comment-'+idx)?.value||'';
+  m.approvals[idx]={...m.approvals[idx],status:'rejected',by:'manager.cct',time:new Date().toLocaleString('zh-TW'),comment:comment||'拒絕'};
+  renderApprovalModal(m);
+  renderMaintList('all');
+}
+
+function closeApproval(e){
+  if(!e||e.target===document.getElementById('approval-overlay'))
+    document.getElementById('approval-overlay').classList.remove('open');
+}
+
+renderMaintList('all');
 
 function tick(){
   const now=Date.now();
