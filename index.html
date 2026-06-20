@@ -14,7 +14,10 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
 .nav-tab:hover{color:#e2e8f0}
 .nav-tab.active{color:#e2e8f0;border-bottom-color:#3b82f6}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-.alert-btn{background:#1f2937;border:1px solid #374151;color:#f59e0b;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.lang-switcher{display:flex;align-items:center;background:#21262d;border:1px solid #30363d;border-radius:8px;overflow:hidden;margin-right:8px}
+.lang-btn{padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;color:#6b7280;background:transparent;border:none;transition:all .15s;letter-spacing:.04em}
+.lang-btn:hover{color:#e2e8f0}
+.lang-btn.active{background:#3b82f6;color:#fff}
 .alert-dot{width:8px;height:8px;background:#ef4444;border-radius:50%;animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .page{display:none;flex:1}
@@ -216,31 +219,126 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
 
 <nav>
   <div class="nav-logo">TES<span>M</span></div>
-  <div class="nav-tab active" onclick="showPage('dashboard',this)">搶修儀表板</div>
-  <div class="nav-tab" onclick="showPage('monitor',this)">即時監控</div>
-  <div class="nav-tab" onclick="showPage('stats',this)">統計分析</div>
-  <div class="nav-tab" onclick="showPage('maintenance',this)">保養計畫</div>
-  <div class="nav-right">
+  <div class="nav-tab active" onclick="showPage('dashboard',this)" data-i18n="nav_dashboard">搶修儀表板</div>
+  <div class="nav-tab" onclick="showPage('monitor',this)" data-i18n="nav_monitor">即時監控</div>
+  <div class="nav-tab" onclick="showPage('stats',this)" data-i18n="nav_stats">統計分析</div>
+  <div class="nav-tab" onclick="showPage('maintenance',this)" data-i18n="nav_maint">保養計畫</div>
+  <div class="nav-tab" onclick="showPage('changelog',this)" data-i18n="nav_changelog" style="margin-left:auto">📋 更新日誌</div>
+  <div class="nav-right" style="margin-left:0">
+    <div class="lang-switcher">
+      <button class="lang-btn" onclick="setLang('zh')">中</button>
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('es')">ES</button>
+    </div>
     <div class="alert-btn"><span class="alert-dot"></span> 2 alerts</div>
   </div>
 </nav>
 
+<!-- 密碼 MODAL -->
+<div class="modal-overlay" id="lock-overlay" onclick="closeLock(event)">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-eq-name">🔒 更新日誌</div>
+        <div class="modal-eq-type" data-i18n="lock_subtitle">請輸入密碼</div>
+      </div>
+      <button class="modal-close" onclick="closeLock()">✕</button>
+    </div>
+    <div style="padding:20px 24px">
+      <input id="lock-input" type="password" placeholder="••••••••"
+        style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:10px 14px;font-size:16px;color:#e2e8f0;outline:none;letter-spacing:.2em"
+        onkeydown="if(event.key==='Enter')checkPassword()"/>
+      <div id="lock-error" style="color:#f87171;font-size:12px;margin-top:8px;display:none" data-i18n="lock_error">密碼錯誤，請再試一次</div>
+      <button onclick="checkPassword()"
+        style="width:100%;margin-top:14px;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer"
+        data-i18n="lock_enter">進入</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGELOG PAGE -->
+<div class="page" id="page-changelog">
+  <div style="padding:20px 24px;max-width:900px;width:100%">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h1 style="font-size:18px;font-weight:600" data-i18n="changelog_title">更新日誌</h1>
+      <button onclick="openAddLogLock()"
+        style="padding:7px 16px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"
+        data-i18n="changelog_add">+ 新增記錄</button>
+    </div>
+
+    <!-- 新增表單 -->
+    <div id="add-log-form" style="display:none;background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em" data-i18n="log_version">版本</div>
+          <input id="log-version" placeholder="v1.0.1" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none"/>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em" data-i18n="log_type">類型</div>
+          <select id="log-type" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none">
+            <option value="feature">✨ 新功能</option>
+            <option value="fix">🐛 修復</option>
+            <option value="improve">⚡ 改善</option>
+            <option value="security">🔒 安全</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em" data-i18n="log_content">內容</div>
+        <textarea id="log-content" rows="3" placeholder="描述這次更新的內容..."
+          style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 10px;font-size:13px;color:#e2e8f0;outline:none;resize:none;font-family:inherit"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="submitLog()" style="padding:7px 16px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer" data-i18n="log_submit">儲存</button>
+        <button onclick="closeAddLog()" style="padding:7px 16px;background:#21262d;color:#6b7280;border:none;border-radius:6px;font-size:13px;cursor:pointer" data-i18n="log_cancel">取消</button>
+      </div>
+    </div>
+
+    <!-- 日誌列表 -->
+    <div id="changelog-list"></div>
+  </div>
+</div>
+
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="dash-header">
-    <h1>搶修儀表板</h1>
+    <h1 data-i18n="dash_title">搶修儀表板</h1>
     <div class="dash-time" id="dash-clock"></div>
   </div>
   <div class="kpi-row">
-    <div class="kpi danger" onclick="goToMonitor('Emergency Maintenance')" style="cursor:pointer"><div class="kpi-label">Emergency</div><div class="kpi-value">3</div><div class="kpi-sub">需要立即處理</div></div>
-    <div class="kpi warn" onclick="goToMonitor('Out Of Service')" style="cursor:pointer"><div class="kpi-label">Out Of Service</div><div class="kpi-value">71</div><div class="kpi-sub">停機中</div></div>
-    <div class="kpi ok" onclick="goToMonitor('Available')" style="cursor:pointer"><div class="kpi-label">Available</div><div class="kpi-value">38</div><div class="kpi-sub">可用中</div></div>
-    <div class="kpi blue" onclick="goToMonitor('Running')" style="cursor:pointer"><div class="kpi-label">Running</div><div class="kpi-value">142</div><div class="kpi-sub">作業中</div></div>
+    <div class="kpi danger" onclick="goToMonitor('Emergency Maintenance')" style="cursor:pointer">
+      <div class="kpi-label" data-i18n="kpi_emerg">Emergency</div>
+      <div class="kpi-value">3</div>
+      <div class="kpi-sub" data-i18n="kpi_sub_emerg">需要立即處理</div>
+    </div>
+    <div class="kpi warn" onclick="goToMonitor('Out Of Service')" style="cursor:pointer">
+      <div class="kpi-label" data-i18n="kpi_oos">Out Of Service</div>
+      <div class="kpi-value">71</div>
+      <div class="kpi-sub" data-i18n="kpi_sub_oos">停機中</div>
+    </div>
+    <div class="kpi ok" onclick="goToMonitor('Available')" style="cursor:pointer">
+      <div class="kpi-label" data-i18n="kpi_avail">Available</div>
+      <div class="kpi-value">38</div>
+      <div class="kpi-sub" data-i18n="kpi_sub_avail">可用中</div>
+    </div>
+    <div class="kpi blue" onclick="goToMonitor('Running')" style="cursor:pointer">
+      <div class="kpi-label" data-i18n="kpi_run">Running</div>
+      <div class="kpi-value">142</div>
+      <div class="kpi-sub" data-i18n="kpi_sub_run">作業中</div>
+    </div>
   </div>
-  <div class="section-title">目前搶修中</div>
+  <div class="section-title" data-i18n="dash_section">目前搶修中</div>
   <div class="repair-table-wrap">
     <table class="repair-table">
-      <thead><tr><th>設備</th><th>狀態</th><th>故障時間</th><th>已維修</th><th>上次故障</th><th>上次維修時長</th><th>搶修人員</th></tr></thead>
+      <thead><tr>
+        <th data-i18n="col_eq">設備</th>
+        <th data-i18n="col_status">狀態</th>
+        <th data-i18n="col_fault">故障時間</th>
+        <th data-i18n="col_elapsed">已維修</th>
+        <th data-i18n="col_prev">上次故障</th>
+        <th data-i18n="col_prevdur">上次維修時長</th>
+        <th data-i18n="col_crew">搶修人員</th>
+      </tr></thead>
       <tbody id="repair-tbody"></tbody>
     </table>
   </div>
@@ -560,6 +658,72 @@ let activeStatus='All',activeType='All',viewMode='grid';
 function fmt(ms){const m=Math.floor(ms/60000);const h=Math.floor(m/60);return h>0?`${h}h ${m%60}m`:`${m}m`;}
 function fmtTime(ts){return new Date(ts).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}
 
+const I18N={
+  zh:{
+    nav_dashboard:'搶修儀表板', nav_monitor:'即時監控', nav_stats:'統計分析', nav_maint:'保養計畫',
+    dash_title:'搶修儀表板', dash_section:'目前搶修中',
+    kpi_emerg:'緊急搶修', kpi_oos:'停機中', kpi_avail:'可用', kpi_run:'作業中',
+    kpi_sub_emerg:'需要立即處理', kpi_sub_oos:'停機中', kpi_sub_avail:'可用中', kpi_sub_run:'作業中',
+    col_eq:'設備', col_status:'狀態', col_fault:'故障時間', col_elapsed:'已維修', col_prev:'上次故障', col_prevdur:'上次維修時長', col_crew:'搶修人員',
+    stats_title:'統計分析', maint_title:'保養計畫',
+    maint_all:'全部 (4)', maint_pending:'待核准 (2)', maint_approved:'已核准 (1)', maint_rejected:'被拒 (1)',
+    search_placeholder:'搜尋設備...',
+    ap_approve:'✓ 核准', ap_reject:'✗ 拒絕',
+    status_history:'狀態歷史', mark_as:'標記為：',
+    ap_applicant:'申請人', ap_date:'申請時間', ap_duration:'預計時長',
+    hist_fault:'故障原因', hist_action:'處理動作', hist_notes:'備註',
+    nav_changelog:'更新日誌', lock_subtitle:'請輸入密碼', lock_error:'密碼錯誤，請再試一次', lock_enter:'進入',
+    changelog_title:'更新日誌', changelog_add:'+ 新增記錄', log_version:'版本', log_type:'類型', log_content:'內容', log_submit:'儲存', log_cancel:'取消',
+  },
+  en:{
+    nav_dashboard:'Repair Dashboard', nav_monitor:'Live Monitor', nav_stats:'Statistics', nav_maint:'Maintenance',
+    dash_title:'Repair Dashboard', dash_section:'Currently Under Repair',
+    kpi_emerg:'Emergency', kpi_oos:'Out Of Service', kpi_avail:'Available', kpi_run:'Running',
+    kpi_sub_emerg:'Immediate action needed', kpi_sub_oos:'Out of service', kpi_sub_avail:'Ready', kpi_sub_run:'In operation',
+    col_eq:'Equipment', col_status:'Status', col_fault:'Fault Time', col_elapsed:'Elapsed', col_prev:'Last Fault', col_prevdur:'Last Repair', col_crew:'Crew',
+    stats_title:'Statistics', maint_title:'Maintenance Plan',
+    maint_all:'All (4)', maint_pending:'Pending (2)', maint_approved:'Approved (1)', maint_rejected:'Rejected (1)',
+    search_placeholder:'Search equipment...',
+    ap_approve:'✓ Approve', ap_reject:'✗ Reject',
+    status_history:'Status History', mark_as:'Mark as:',
+    ap_applicant:'Applicant', ap_date:'Submitted', ap_duration:'Est. Duration',
+    hist_fault:'Fault Reason', hist_action:'Action Taken', hist_notes:'Notes',
+    nav_changelog:'Changelog', lock_subtitle:'Enter password', lock_error:'Wrong password, try again', lock_enter:'Enter',
+    changelog_title:'Changelog', changelog_add:'+ Add Entry', log_version:'Version', log_type:'Type', log_content:'Content', log_submit:'Save', log_cancel:'Cancel',
+  },
+  es:{
+    nav_dashboard:'Panel de Reparación', nav_monitor:'Monitor en Vivo', nav_stats:'Estadísticas', nav_maint:'Mantenimiento',
+    dash_title:'Panel de Reparación', dash_section:'En Reparación Ahora',
+    kpi_emerg:'Emergencia', kpi_oos:'Fuera de Servicio', kpi_avail:'Disponible', kpi_run:'En Operación',
+    kpi_sub_emerg:'Acción inmediata', kpi_sub_oos:'Fuera de servicio', kpi_sub_avail:'Disponible', kpi_sub_run:'En operación',
+    col_eq:'Equipo', col_status:'Estado', col_fault:'Hora de Falla', col_elapsed:'Transcurrido', col_prev:'Última Falla', col_prevdur:'Última Reparación', col_crew:'Personal',
+    stats_title:'Estadísticas', maint_title:'Plan de Mantenimiento',
+    maint_all:'Todo (4)', maint_pending:'Pendiente (2)', maint_approved:'Aprobado (1)', maint_rejected:'Rechazado (1)',
+    search_placeholder:'Buscar equipo...',
+    ap_approve:'✓ Aprobar', ap_reject:'✗ Rechazar',
+    status_history:'Historial de Estado', mark_as:'Marcar como:',
+    ap_applicant:'Solicitante', ap_date:'Enviado', ap_duration:'Duración Est.',
+    hist_fault:'Causa de Falla', hist_action:'Acción Tomada', hist_notes:'Notas',
+    nav_changelog:'Registro de Cambios', lock_subtitle:'Ingrese contraseña', lock_error:'Contraseña incorrecta', lock_enter:'Entrar',
+    changelog_title:'Registro de Cambios', changelog_add:'+ Agregar', log_version:'Versión', log_type:'Tipo', log_content:'Contenido', log_submit:'Guardar', log_cancel:'Cancelar',
+  }
+};
+let currentLang='zh';
+function t(k){return I18N[currentLang][k]||I18N['en'][k]||k;}
+function setLang(lang){
+  currentLang=lang;
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.classList.toggle('active',(lang==='zh'&&b.textContent==='中')||(lang==='en'&&b.textContent==='EN')||(lang==='es'&&b.textContent==='ES'));
+  });
+  // 掃描全頁所有 data-i18n 元素
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  // 更新動態元素
+  document.querySelectorAll('.maint-tab').forEach((b,i)=>{const k=['maint_all','maint_pending','maint_approved','maint_rejected'];if(k[i])b.textContent=t(k[i]);});
+  const es=document.getElementById('eq-search');if(es)es.placeholder=t('search_placeholder');
+  const mh=document.querySelector('.modal-history h3');if(mh)mh.textContent=t('status_history');
+  const ms=document.querySelector('.modal-status-btns span');if(ms)ms.textContent=t('mark_as');
+}
+
 function buildDashboard(){
   const now=Date.now();
   document.getElementById('repair-tbody').innerHTML=REPAIR_DATA.map(r=>{
@@ -612,6 +776,100 @@ function renderEq(){
     }).join('')}</div>`;
   }
 }
+
+// ── CHANGELOG ──────────────────────────────────────────
+const CHANGELOG_PASSWORD = 'CCT2026';
+let changelogUnlocked = false;
+let changelogTab = null;
+
+const LOGS = [
+  {date:'2026/06/20',version:'v1.0.0',type:'feature',content:'TESM 正式上線，包含搶修儀表板、即時監控、統計分析、保養計畫四大功能'},
+  {date:'2026/06/20',version:'v1.0.1',type:'improve',content:'新增三語言切換（中文、English、Español）'},
+  {date:'2026/06/20',version:'v1.0.2',type:'feature',content:'保養計畫新增三層簽核流程（Leader → Dep. Head → Op. Head）'},
+  {date:'2026/06/20',version:'v1.0.3',type:'fix',content:'修復狀態歷史點擊後 KPI 卡片跳轉至即時監控'},
+];
+
+const TYPE_META={
+  feature:{label:'✨ 新功能',color:'#3b82f6',bg:'#0c1a3a'},
+  fix:{label:'🐛 修復',color:'#f87171',bg:'#450a0a'},
+  improve:{label:'⚡ 改善',color:'#fb923c',bg:'#431407'},
+  security:{label:'🔒 安全',color:'#c084fc',bg:'#2e1065'},
+};
+
+function openChangelogLock(tab){
+  changelogTab = tab;
+  if(changelogUnlocked){ showPage('changelog', tab); return; }
+  document.getElementById('lock-overlay').classList.add('open');
+  document.getElementById('lock-input').value='';
+  document.getElementById('lock-error').style.display='none';
+  setTimeout(()=>document.getElementById('lock-input').focus(),100);
+}
+
+function openAddLogLock(){
+  if(changelogUnlocked){ openAddLog(); return; }
+  document.getElementById('lock-overlay').classList.add('open');
+  document.getElementById('lock-input').value='';
+  document.getElementById('lock-error').style.display='none';
+  setTimeout(()=>document.getElementById('lock-input').focus(),100);
+}
+
+function checkPassword(){
+  const val = document.getElementById('lock-input').value;
+  if(val === CHANGELOG_PASSWORD){
+    changelogUnlocked = true;
+    document.getElementById('lock-overlay').classList.remove('open');
+    if(changelogTab){ showPage('changelog', changelogTab); changelogTab=null; }
+    openAddLog();
+    renderChangelog();
+  } else {
+    document.getElementById('lock-error').style.display='block';
+    document.getElementById('lock-input').value='';
+    document.getElementById('lock-input').focus();
+  }
+}
+
+function closeLock(e){
+  if(!e||e.target===document.getElementById('lock-overlay'))
+    document.getElementById('lock-overlay').classList.remove('open');
+}
+
+function renderChangelog(){
+  const list = document.getElementById('changelog-list');
+  list.innerHTML = [...LOGS].reverse().map(log=>{
+    const m = TYPE_META[log.type]||TYPE_META['feature'];
+    return `<div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px 18px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start">
+      <div style="flex-shrink:0;text-align:center;min-width:70px">
+        <div style="font-size:11px;color:#6b7280">${log.date}</div>
+        <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:2px">${log.version}</div>
+      </div>
+      <div style="flex-shrink:0">
+        <span style="background:${m.bg};color:${m.color};border:1px solid ${m.color}40;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">${m.label}</span>
+      </div>
+      <div style="font-size:13px;color:#94a3b8;line-height:1.6">${log.content}</div>
+    </div>`;
+  }).join('');
+}
+
+function openAddLog(){
+  document.getElementById('add-log-form').style.display='block';
+}
+function closeAddLog(){
+  document.getElementById('add-log-form').style.display='none';
+}
+function submitLog(){
+  const version = document.getElementById('log-version').value.trim();
+  const type = document.getElementById('log-type').value;
+  const content = document.getElementById('log-content').value.trim();
+  if(!version||!content) return;
+  const now = new Date();
+  const date = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  LOGS.push({date,version,type,content});
+  closeAddLog();
+  document.getElementById('log-version').value='';
+  document.getElementById('log-content').value='';
+  renderChangelog();
+}
+// ────────────────────────────────────────────────────────
 
 function goToMonitor(status){
   activeStatus=status;
@@ -681,7 +939,7 @@ function toggleHistoryDetail(i){
 }
 
 function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.remove('open');}
-function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');tab.classList.add('active');}
+function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');tab.classList.add('active');if(id==='changelog')renderChangelog();}
 
 const MAINT_DATA=[
   {id:'CH-069',title:'CH-069 — 煞車系統更換',desc:'前後煞車片更換、煞車油更換',meta:'申請人：alfredo.bony　2026/06/16 08:00　預計時長：6 hrs',applicant:'alfredo.bony',date:'2026/06/16 08:00',duration:'6 hrs',approvals:[{role:'Leader',status:'done',by:'r.rodriguez',time:'2026/06/16 09:10',comment:'確認需要更換'},{role:'Dep. Head',status:'done',by:'a.hudson',time:'2026/06/16 11:30',comment:'批准'},{role:'Op. Head',status:'done',by:'c.escorcia',time:'2026/06/16 14:00',comment:'同意執行'}]},
@@ -833,6 +1091,7 @@ function tick(){
 }
 
 buildDashboard();buildMonitor();tick();setInterval(tick,1000);
+setLang('zh');
 </script>
 </body>
 </html>
