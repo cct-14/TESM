@@ -1,21 +1,24 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>TESM 故障回報</title>
+<title>TESM Reporte</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;overflow:hidden}
 
 /* HEADER */
-.header{background:#161b22;border-bottom:1px solid #21262d;padding:14px 20px;display:flex;align-items:center;gap:12px;position:fixed;top:0;left:0;right:0;z-index:100}
+.header{background:#161b22;border-bottom:1px solid #21262d;padding:14px 16px;display:flex;align-items:center;gap:10px;position:fixed;top:0;left:0;right:0;z-index:100}
 .header-logo{font-size:16px;font-weight:700;color:#fff;letter-spacing:.08em}
 .header-logo span{color:#3b82f6}
 .back-btn{font-size:14px;color:#3b82f6;cursor:pointer;padding:4px 0}
-.step-counter{margin-left:auto;font-size:12px;color:#6b7280}
+.step-counter{font-size:12px;color:#6b7280}
+.lang-switcher{display:flex;margin-left:auto;background:#21262d;border-radius:8px;overflow:hidden;border:1px solid #30363d}
+.lang-btn{padding:5px 9px;font-size:11px;font-weight:600;cursor:pointer;color:#6b7280;background:transparent;border:none}
+.lang-btn.active{background:#3b82f6;color:#fff}
 
 /* PROGRESS BAR */
 .progress-bar{position:fixed;top:53px;left:0;right:0;height:3px;background:#21262d;z-index:100}
@@ -88,9 +91,14 @@ textarea.big-input{resize:none;line-height:1.5;font-size:17px}
 <body>
 
 <div class="header">
-  <div class="back-btn" onclick="goBack()">‹ 返回</div>
+  <div class="back-btn" onclick="goBack()" data-i18n="back">‹ Volver</div>
   <div class="header-logo">TES<span>M</span></div>
   <div class="step-counter" id="step-counter">1 / 5</div>
+  <div class="lang-switcher">
+    <button class="lang-btn" onclick="setLang('zh')">中</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn active" onclick="setLang('es')">ES</button>
+  </div>
 </div>
 
 <div class="progress-bar">
@@ -101,25 +109,25 @@ textarea.big-input{resize:none;line-height:1.5;font-size:17px}
 
   <!-- STEP 1: 種類 -->
   <div class="step active" id="step-1">
-    <div class="step-label">步驟 1</div>
-    <div class="step-question">選擇設備種類</div>
+    <div class="step-label" data-i18n="step1_label">Paso 1</div>
+    <div class="step-question" data-i18n="step1_q">Seleccionar tipo de equipo</div>
     <div class="kind-grid" id="kind-grid"></div>
   </div>
 
   <!-- STEP 2: 編號 -->
   <div class="step" id="step-2">
-    <div class="step-label">步驟 2</div>
-    <div class="step-question">輸入設備編號</div>
+    <div class="step-label" data-i18n="step2_label">Paso 2</div>
+    <div class="step-question" data-i18n="step2_q">Número de equipo</div>
     <div id="field-number">
-      <input class="big-input" id="input-number" type="text" placeholder="例如：42" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key==='Enter')nextStep()"/>
-      <div class="input-error">請輸入設備編號</div>
+      <input class="big-input" id="input-number" type="text" placeholder="Ej: 42" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key==='Enter')nextStep()"/>
+      <div class="input-error" data-i18n="err_number">Por favor ingrese el número</div>
     </div>
   </div>
 
   <!-- STEP 3: 狀態 -->
   <div class="step" id="step-3">
-    <div class="step-label">步驟 3</div>
-    <div class="step-question">目前設備狀態</div>
+    <div class="step-label" data-i18n="step3_label">Paso 3</div>
+    <div class="step-question" data-i18n="step3_q">Estado actual del equipo</div>
     <div class="status-list">
       <button class="status-btn s-av" onclick="selectStatus('Available',this)"><div class="status-dot"></div>Available</button>
       <button class="status-btn s-ru" onclick="selectStatus('Running',this)"><div class="status-dot"></div>Running</button>
@@ -132,32 +140,32 @@ textarea.big-input{resize:none;line-height:1.5;font-size:17px}
 
   <!-- STEP 4: Process -->
   <div class="step" id="step-4">
-    <div class="step-label">步驟 4</div>
-    <div class="step-question">故障描述</div>
-    <textarea class="big-input" id="input-process" rows="4" placeholder="描述故障情況或處理過程...（選填）"></textarea>
-    <div class="skip-link" onclick="nextStep()">略過此步驟</div>
+    <div class="step-label" data-i18n="step4_label">Paso 4</div>
+    <div class="step-question" data-i18n="step4_q">Descripción de la falla</div>
+    <textarea class="big-input" id="input-process" rows="4" placeholder="Descripción..."></textarea>
+    <div class="skip-link" onclick="nextStep()" data-i18n="skip">Omitir este paso</div>
   </div>
 
   <!-- STEP 5: Crew -->
   <div class="step" id="step-5">
-    <div class="step-label">步驟 5</div>
-    <div class="step-question">你是誰？</div>
+    <div class="step-label" data-i18n="step5_label">Paso 5</div>
+    <div class="step-question" data-i18n="step5_q">¿Quién reporta?</div>
     <div id="field-crew">
-      <input class="big-input" id="input-crew" type="text" placeholder="輸入姓名" autocomplete="name" onkeydown="if(event.key==='Enter')nextStep()"/>
-      <div class="input-error">請輸入回報人員姓名</div>
+      <input class="big-input" id="input-crew" type="text" placeholder="Ingrese su nombre" autocomplete="name" onkeydown="if(event.key==='Enter')nextStep()"/>
+      <div class="input-error" data-i18n="err_crew">Por favor ingrese su nombre</div>
     </div>
   </div>
 
   <!-- STEP 6: 確認 -->
   <div class="step" id="step-6">
-    <div class="step-label">確認送出</div>
-    <div class="step-question">確認回報內容</div>
+    <div class="step-label" data-i18n="step6_label">Confirmación</div>
+    <div class="step-question" data-i18n="step6_q">Verificar reporte</div>
     <div class="confirm-list">
-      <div class="confirm-row"><div class="confirm-label">設備種類</div><div class="confirm-value" id="confirm-kind">-</div></div>
-      <div class="confirm-row"><div class="confirm-label">設備編號</div><div class="confirm-value" id="confirm-number">-</div></div>
-      <div class="confirm-row"><div class="confirm-label">狀態</div><div class="confirm-value" id="confirm-status">-</div></div>
-      <div class="confirm-row"><div class="confirm-label">故障描述</div><div class="confirm-value" id="confirm-process" style="color:#6b7280">-</div></div>
-      <div class="confirm-row"><div class="confirm-label">回報人員</div><div class="confirm-value" id="confirm-crew">-</div></div>
+      <div class="confirm-row"><div class="confirm-label" data-i18n="conf_kind">Tipo</div><div class="confirm-value" id="confirm-kind">-</div></div>
+      <div class="confirm-row"><div class="confirm-label" data-i18n="conf_number">Número</div><div class="confirm-value" id="confirm-number">-</div></div>
+      <div class="confirm-row"><div class="confirm-label" data-i18n="conf_status">Estado</div><div class="confirm-value" id="confirm-status">-</div></div>
+      <div class="confirm-row"><div class="confirm-label" data-i18n="conf_process">Descripción</div><div class="confirm-value" id="confirm-process" style="color:#6b7280">-</div></div>
+      <div class="confirm-row"><div class="confirm-label" data-i18n="conf_crew">Personal</div><div class="confirm-value" id="confirm-crew">-</div></div>
     </div>
   </div>
 
@@ -165,21 +173,89 @@ textarea.big-input{resize:none;line-height:1.5;font-size:17px}
 
 <!-- BOTTOM BAR -->
 <div class="bottom-bar">
-  <button class="next-btn" id="next-btn" onclick="nextStep()" disabled>下一步</button>
+  <button class="next-btn" id="next-btn" onclick="nextStep()" disabled data-i18n="next_btn">Siguiente</button>
 </div>
 
 <!-- SUCCESS -->
 <div class="success-wrap" id="success-wrap" style="display:none">
   <div class="success-icon">✅</div>
-  <div class="success-title">回報成功！</div>
+  <div class="success-title" data-i18n="success_title">¡Reporte Enviado!</div>
   <div class="success-sub" id="success-detail"></div>
-  <button class="reset-btn" onclick="resetForm()">再填一筆</button>
+  <button class="reset-btn" onclick="resetForm()" data-i18n="reset_btn">Nuevo Reporte</button>
 </div>
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbTaNroJX1M7lz1fZS6BiiUFUJEzc2wCKnKw9jFhjYVUQKN-J-bczpmFfpKOMMHV12/exec';
 const KINDS = ['TR','RTG','CH','GC','FL','SL','ESL','SP','RS','PPG','ARMGC'];
 const TOTAL_STEPS = 6;
+
+const I18N = {
+  zh:{
+    back:'‹ 返回', step1_label:'步驟 1', step1_q:'選擇設備種類',
+    step2_label:'步驟 2', step2_q:'輸入設備編號',
+    step3_label:'步驟 3', step3_q:'目前設備狀態',
+    step4_label:'步驟 4', step4_q:'故障描述',
+    step5_label:'步驟 5', step5_q:'你是誰？',
+    step6_label:'確認送出', step6_q:'確認回報內容',
+    conf_kind:'設備種類', conf_number:'設備編號', conf_status:'狀態', conf_process:'故障描述', conf_crew:'回報人員',
+    next_btn:'下一步', submit_btn:'✓ 送出回報', sending:'送出中...',
+    skip:'略過此步驟',
+    err_number:'請輸入設備編號', err_crew:'請輸入回報人員姓名',
+    success_title:'回報成功！', reset_btn:'再填一筆',
+    input_number_ph:'例如：42', input_process_ph:'描述故障情況或處理過程...', input_crew_ph:'輸入姓名',
+    none:'（無）', reporter:'回報人',
+  },
+  en:{
+    back:'‹ Back', step1_label:'Step 1', step1_q:'Select equipment type',
+    step2_label:'Step 2', step2_q:'Equipment number',
+    step3_label:'Step 3', step3_q:'Current equipment status',
+    step4_label:'Step 4', step4_q:'Fault description',
+    step5_label:'Step 5', step5_q:'Who are you?',
+    step6_label:'Confirm', step6_q:'Review report',
+    conf_kind:'Type', conf_number:'Number', conf_status:'Status', conf_process:'Description', conf_crew:'Crew',
+    next_btn:'Next', submit_btn:'✓ Submit Report', sending:'Sending...',
+    skip:'Skip this step',
+    err_number:'Please enter equipment number', err_crew:'Please enter your name',
+    success_title:'Report Submitted!', reset_btn:'New Report',
+    input_number_ph:'e.g. 42', input_process_ph:'Describe the fault...', input_crew_ph:'Your name',
+    none:'(none)', reporter:'Reporter',
+  },
+  es:{
+    back:'‹ Volver', step1_label:'Paso 1', step1_q:'Seleccionar tipo de equipo',
+    step2_label:'Paso 2', step2_q:'Número de equipo',
+    step3_label:'Paso 3', step3_q:'Estado actual del equipo',
+    step4_label:'Paso 4', step4_q:'Descripción de la falla',
+    step5_label:'Paso 5', step5_q:'¿Quién reporta?',
+    step6_label:'Confirmación', step6_q:'Verificar reporte',
+    conf_kind:'Tipo', conf_number:'Número', conf_status:'Estado', conf_process:'Descripción', conf_crew:'Personal',
+    next_btn:'Siguiente', submit_btn:'✓ Enviar Reporte', sending:'Enviando...',
+    skip:'Omitir este paso',
+    err_number:'Por favor ingrese el número', err_crew:'Por favor ingrese su nombre',
+    success_title:'¡Reporte Enviado!', reset_btn:'Nuevo Reporte',
+    input_number_ph:'Ej: 42', input_process_ph:'Descripción de la falla...', input_crew_ph:'Ingrese su nombre',
+    none:'(ninguno)', reporter:'Reportado por',
+  }
+};
+
+let currentLang = 'es';
+
+function t(k){ return I18N[currentLang][k] || I18N['en'][k] || k; }
+
+function setLang(lang){
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.classList.toggle('active',
+      (lang==='zh'&&b.textContent==='中')||
+      (lang==='en'&&b.textContent==='EN')||
+      (lang==='es'&&b.textContent==='ES')
+    );
+  });
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
+  document.getElementById('input-number').placeholder = t('input_number_ph');
+  document.getElementById('input-process').placeholder = t('input_process_ph');
+  document.getElementById('input-crew').placeholder = t('input_crew_ph');
+  updateNextBtn();
+}
 
 let currentStep = 1;
 let selectedKind = '';
@@ -223,13 +299,12 @@ function nextStep(){
     return;
   }
   if(currentStep === TOTAL_STEPS - 1){
-    // 填寫確認頁
     document.getElementById('confirm-kind').textContent = selectedKind;
     document.getElementById('confirm-number').textContent = selectedKind + '-' + document.getElementById('input-number').value.trim();
     document.getElementById('confirm-status').textContent = selectedStatus;
-    document.getElementById('confirm-process').textContent = document.getElementById('input-process').value.trim() || '（無）';
+    document.getElementById('confirm-process').textContent = document.getElementById('input-process').value.trim() || t('none');
     document.getElementById('confirm-crew').textContent = document.getElementById('input-crew').value.trim();
-    document.getElementById('next-btn').textContent = '✓ 送出回報';
+    document.getElementById('next-btn').textContent = t('submit_btn');
     document.getElementById('next-btn').style.background = '#16a34a';
   }
   goToStep(currentStep + 1);
@@ -255,12 +330,12 @@ function updateNextBtn(){
   const btn = document.getElementById('next-btn');
   btn.disabled = false;
   btn.style.background = '';
-  if(currentStep === 1){ btn.disabled = !selectedKind; btn.textContent = '下一步'; }
-  else if(currentStep === 2) btn.textContent = '下一步';
-  else if(currentStep === 3){ btn.disabled = !selectedStatus; btn.textContent = '下一步'; }
-  else if(currentStep === 4) btn.textContent = '下一步';
-  else if(currentStep === 5) btn.textContent = '下一步';
-  else if(currentStep === 6){ btn.textContent = '✓ 送出回報'; btn.style.background = '#16a34a'; }
+  if(currentStep === 1){ btn.disabled = !selectedKind; btn.textContent = t('next_btn'); }
+  else if(currentStep === 2) btn.textContent = t('next_btn');
+  else if(currentStep === 3){ btn.disabled = !selectedStatus; btn.textContent = t('next_btn'); }
+  else if(currentStep === 4) btn.textContent = t('next_btn');
+  else if(currentStep === 5) btn.textContent = t('next_btn');
+  else if(currentStep === 6){ btn.textContent = t('submit_btn'); btn.style.background = '#16a34a'; }
 }
 
 function selectKind(kind, btn){
@@ -288,7 +363,7 @@ async function submitReport(){
 
   const btn = document.getElementById('next-btn');
   btn.disabled = true;
-  btn.textContent = '送出中...';
+  btn.textContent = t('sending');
 
   try {
     await fetch(SCRIPT_URL, {
@@ -309,13 +384,13 @@ async function submitReport(){
     document.querySelector('.header').style.display='none';
     const sw = document.getElementById('success-wrap');
     sw.style.display='flex';
-    document.getElementById('success-detail').textContent = `${number} — ${selectedStatus}\n回報人：${crew}`;
+    document.getElementById('success-detail').textContent = `${number} — ${selectedStatus}\n${t('reporter')}: ${crew}`;
 
   } catch(err){
     btn.disabled = false;
-    btn.textContent = '✓ 送出回報';
+    btn.textContent = t('submit_btn');
     btn.style.background = '#16a34a';
-    alert('送出失敗，請檢查網路連線後再試');
+    alert('Error. Check network.');
   }
 }
 
@@ -331,13 +406,14 @@ function resetForm(){
   document.querySelector('.progress-bar').style.display='block';
   document.querySelector('.header').style.display='flex';
   document.getElementById('success-wrap').style.display='none';
-  document.getElementById('next-btn').textContent='下一步';
-  document.getElementById('next-btn').style.background='';
   goToStep(1);
 }
 
+document.getElementById('input-number').addEventListener('input',()=>document.getElementById('field-number').classList.remove('show-error'));
+document.getElementById('input-crew').addEventListener('input',()=>document.getElementById('field-crew').classList.remove('show-error'));
+
+setLang('es');
 updateProgress();
-updateNextBtn();
 </script>
 </body>
 </html>
