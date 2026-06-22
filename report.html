@@ -8,137 +8,168 @@
 <title>TESM 故障回報</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;padding-bottom:40px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;overflow:hidden}
 
 /* HEADER */
-.header{background:#161b22;border-bottom:1px solid #21262d;padding:16px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
-.header-logo{font-size:18px;font-weight:700;color:#fff;letter-spacing:.08em}
+.header{background:#161b22;border-bottom:1px solid #21262d;padding:14px 20px;display:flex;align-items:center;gap:12px;position:fixed;top:0;left:0;right:0;z-index:100}
+.header-logo{font-size:16px;font-weight:700;color:#fff;letter-spacing:.08em}
 .header-logo span{color:#3b82f6}
-.header-title{font-size:14px;color:#8b949e}
-.header-link{margin-left:auto;font-size:12px;color:#3b82f6;text-decoration:none}
+.back-btn{font-size:14px;color:#3b82f6;cursor:pointer;padding:4px 0}
+.step-counter{margin-left:auto;font-size:12px;color:#6b7280}
 
-/* FORM */
-.form-wrap{padding:20px 16px;max-width:480px;margin:0 auto}
+/* PROGRESS BAR */
+.progress-bar{position:fixed;top:53px;left:0;right:0;height:3px;background:#21262d;z-index:100}
+.progress-fill{height:100%;background:#3b82f6;transition:width .4s ease}
 
-.field{margin-bottom:20px}
-.field-label{font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block}
-.field-label .required{color:#f87171;margin-left:3px}
+/* STEPS CONTAINER */
+.steps{position:fixed;top:56px;left:0;right:0;bottom:0;overflow:hidden}
+.step{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;justify-content:center;padding:24px 24px 80px;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);opacity:0}
+.step.active{transform:translateX(0);opacity:1}
+.step.prev{transform:translateX(-100%);opacity:0}
 
-/* SELECT GRID */
-.select-grid{display:grid;gap:8px}
-.select-grid.col-3{grid-template-columns:repeat(3,1fr)}
-.select-grid.col-2{grid-template-columns:repeat(2,1fr)}
+/* STEP CONTENT */
+.step-label{font-size:13px;color:#3b82f6;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.step-question{font-size:26px;font-weight:700;color:#fff;margin-bottom:32px;line-height:1.3}
 
-.sel-btn{padding:14px 8px;background:#161b22;border:1.5px solid #21262d;border-radius:10px;color:#8b949e;font-size:13px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s;line-height:1.3}
-.sel-btn:active{transform:scale(.97)}
-.sel-btn.selected{border-color:currentColor;background:#1c2128}
+/* KIND GRID */
+.kind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kind-btn{padding:18px 8px;background:#161b22;border:1.5px solid #21262d;border-radius:14px;color:#94a3b8;font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.kind-btn:active{transform:scale(.95)}
+.kind-btn.selected{background:#0c1a3a;border-color:#3b82f6;color:#60a5fa}
 
-.sel-btn.kind-btn.selected{color:#60a5fa;border-color:#3b82f6;background:#0c1a3a}
-
-.sel-btn.status-av{color:#4ade80}.sel-btn.status-av.selected{border-color:#4ade80;background:#052e16}
-.sel-btn.status-ru{color:#60a5fa}.sel-btn.status-ru.selected{border-color:#60a5fa;background:#0c1a3a}
-.sel-btn.status-em{color:#fb923c}.sel-btn.status-em.selected{border-color:#fb923c;background:#431407}
-.sel-btn.status-oos{color:#94a3b8}.sel-btn.status-oos.selected{border-color:#94a3b8;background:#1f2937}
-.sel-btn.status-pl{color:#c084fc}.sel-btn.status-pl.selected{border-color:#c084fc;background:#2e1065}
-.sel-btn.status-dm{color:#f87171}.sel-btn.status-dm.selected{border-color:#f87171;background:#450a0a}
+/* STATUS LIST */
+.status-list{display:flex;flex-direction:column;gap:10px}
+.status-btn{padding:18px 20px;background:#161b22;border:1.5px solid #21262d;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;transition:all .15s}
+.status-btn:active{transform:scale(.98)}
+.status-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.status-btn.selected{border-color:currentColor}
+.s-av{color:#4ade80}.s-av .status-dot{background:#4ade80}.s-av.selected{background:#052e16}
+.s-ru{color:#60a5fa}.s-ru .status-dot{background:#60a5fa}.s-ru.selected{background:#0c1a3a}
+.s-em{color:#fb923c}.s-em .status-dot{background:#fb923c}.s-em.selected{background:#431407}
+.s-oos{color:#94a3b8}.s-oos .status-dot{background:#94a3b8}.s-oos.selected{background:#1f2937}
+.s-pl{color:#c084fc}.s-pl .status-dot{background:#c084fc}.s-pl.selected{background:#2e1065}
+.s-dm{color:#f87171}.s-dm .status-dot{background:#f87171}.s-dm.selected{background:#450a0a}
 
 /* TEXT INPUT */
-.text-input{width:100%;background:#161b22;border:1.5px solid #21262d;border-radius:10px;padding:14px 16px;font-size:16px;color:#e2e8f0;outline:none;transition:border-color .15s;-webkit-appearance:none}
-.text-input:focus{border-color:#3b82f6}
-.text-input::placeholder{color:#4b5563}
+.big-input{width:100%;background:#161b22;border:1.5px solid #21262d;border-radius:14px;padding:18px 20px;font-size:20px;color:#e2e8f0;outline:none;transition:border-color .15s;-webkit-appearance:none;font-family:inherit}
+.big-input:focus{border-color:#3b82f6}
+.big-input::placeholder{color:#374151}
 
-textarea.text-input{resize:none;line-height:1.5}
+textarea.big-input{resize:none;line-height:1.5;font-size:17px}
 
-/* SUBMIT */
-.submit-btn{width:100%;padding:18px;background:#3b82f6;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s;margin-top:8px}
-.submit-btn:active{transform:scale(.98);background:#2563eb}
-.submit-btn:disabled{background:#21262d;color:#4b5563;cursor:not-allowed}
+/* BOTTOM BUTTON */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;padding:16px 24px;padding-bottom:calc(16px + env(safe-area-inset-bottom));background:linear-gradient(transparent, #0d1117 40%)}
+.next-btn{width:100%;padding:18px;background:#3b82f6;color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;transition:all .15s}
+.next-btn:active{transform:scale(.98);background:#2563eb}
+.next-btn:disabled{background:#1c2128;color:#4b5563;cursor:not-allowed}
+.skip-link{text-align:center;margin-top:12px;font-size:13px;color:#4b5563;cursor:pointer}
+
+/* CONFIRM STEP */
+.confirm-list{display:flex;flex-direction:column;gap:0;background:#161b22;border:1px solid #21262d;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.confirm-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #21262d}
+.confirm-row:last-child{border-bottom:none}
+.confirm-label{font-size:12px;color:#6b7280;min-width:80px}
+.confirm-value{font-size:14px;color:#e2e8f0;font-weight:500}
 
 /* SUCCESS */
-.success-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 20px}
-.success-icon{font-size:64px;margin-bottom:16px}
-.success-title{font-size:22px;font-weight:700;color:#4ade80;margin-bottom:8px}
+.success-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:40px 24px}
+.success-icon{font-size:72px;margin-bottom:20px;animation:pop .4s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.success-title{font-size:24px;font-weight:700;color:#4ade80;margin-bottom:8px}
 .success-sub{font-size:14px;color:#6b7280;margin-bottom:32px}
-.reset-btn{padding:14px 32px;background:#21262d;color:#e2e8f0;border:1px solid #30363d;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}
+.reset-btn{padding:16px 40px;background:#21262d;color:#e2e8f0;border:1px solid #30363d;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer}
 
 /* ERROR */
-.error-msg{color:#f87171;font-size:12px;margin-top:6px;display:none}
-.field.error .text-input{border-color:#f87171}
-.field.error .error-msg{display:block}
-.field.error .sel-btn{border-color:#f87171}
-
-/* DIVIDER */
-.divider{height:1px;background:#21262d;margin:24px 0}
-
-/* LOADING */
-.loading{display:none;align-items:center;justify-content:center;gap:10px;padding:16px;color:#6b7280;font-size:14px}
-.spinner{width:20px;height:20px;border:2px solid #21262d;border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+.input-error{color:#f87171;font-size:13px;margin-top:8px;display:none}
+.show-error .input-error{display:block}
+.show-error .big-input{border-color:#f87171}
 </style>
 </head>
 <body>
 
 <div class="header">
+  <div class="back-btn" onclick="goBack()">‹ 返回</div>
   <div class="header-logo">TES<span>M</span></div>
-  <div class="header-title">故障回報</div>
-  <a class="header-link" href="index.html">← 主控台</a>
+  <div class="step-counter" id="step-counter">1 / 5</div>
 </div>
 
-<div class="form-wrap" id="form-wrap">
+<div class="progress-bar">
+  <div class="progress-fill" id="progress-fill" style="width:20%"></div>
+</div>
 
-  <!-- Machine Kind -->
-  <div class="field" id="field-kind">
-    <label class="field-label">設備種類<span class="required">*</span></label>
-    <div class="select-grid col-3" id="kind-grid"></div>
-    <div class="error-msg">請選擇設備種類</div>
+<div class="steps" id="steps-container">
+
+  <!-- STEP 1: 種類 -->
+  <div class="step active" id="step-1">
+    <div class="step-label">步驟 1</div>
+    <div class="step-question">選擇設備種類</div>
+    <div class="kind-grid" id="kind-grid"></div>
   </div>
 
-  <!-- Number -->
-  <div class="field" id="field-number">
-    <label class="field-label">設備編號<span class="required">*</span></label>
-    <input class="text-input" id="input-number" type="text" placeholder="例如：TR-42" autocomplete="off" autocapitalize="characters"/>
-    <div class="error-msg">請輸入設備編號</div>
-  </div>
-
-  <div class="divider"></div>
-
-  <!-- Status -->
-  <div class="field" id="field-status">
-    <label class="field-label">目前狀態<span class="required">*</span></label>
-    <div class="select-grid col-2">
-      <button class="sel-btn status-av" onclick="selectStatus('Available',this)">✅ Available</button>
-      <button class="sel-btn status-ru" onclick="selectStatus('Running',this)">🔵 Running</button>
-      <button class="sel-btn status-em" onclick="selectStatus('Emergency Maintenance',this)">🚨 Emergency</button>
-      <button class="sel-btn status-oos" onclick="selectStatus('Out Of Service',this)">⛔ Out Of Service</button>
-      <button class="sel-btn status-pl" onclick="selectStatus('Planned Maintenance',this)">🔧 Planned</button>
-      <button class="sel-btn status-dm" onclick="selectStatus('Damaged',this)">💥 Damaged</button>
+  <!-- STEP 2: 編號 -->
+  <div class="step" id="step-2">
+    <div class="step-label">步驟 2</div>
+    <div class="step-question">輸入設備編號</div>
+    <div id="field-number">
+      <input class="big-input" id="input-number" type="text" placeholder="例如：42" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key==='Enter')nextStep()"/>
+      <div class="input-error">請輸入設備編號</div>
     </div>
-    <div class="error-msg">請選擇設備狀態</div>
   </div>
 
-  <div class="divider"></div>
-
-  <!-- Process -->
-  <div class="field">
-    <label class="field-label">處理描述</label>
-    <textarea class="text-input" id="input-process" rows="3" placeholder="描述故障情況或處理過程..."></textarea>
+  <!-- STEP 3: 狀態 -->
+  <div class="step" id="step-3">
+    <div class="step-label">步驟 3</div>
+    <div class="step-question">目前設備狀態</div>
+    <div class="status-list">
+      <button class="status-btn s-av" onclick="selectStatus('Available',this)"><div class="status-dot"></div>Available</button>
+      <button class="status-btn s-ru" onclick="selectStatus('Running',this)"><div class="status-dot"></div>Running</button>
+      <button class="status-btn s-em" onclick="selectStatus('Emergency Maintenance',this)"><div class="status-dot"></div>Emergency Maintenance</button>
+      <button class="status-btn s-oos" onclick="selectStatus('Out Of Service',this)"><div class="status-dot"></div>Out Of Service</button>
+      <button class="status-btn s-pl" onclick="selectStatus('Planned Maintenance',this)"><div class="status-dot"></div>Planned Maintenance</button>
+      <button class="status-btn s-dm" onclick="selectStatus('Damaged',this)"><div class="status-dot"></div>Damaged</button>
+    </div>
   </div>
 
-  <!-- Crew -->
-  <div class="field" id="field-crew">
-    <label class="field-label">回報人員<span class="required">*</span></label>
-    <input class="text-input" id="input-crew" type="text" placeholder="您的姓名" autocomplete="name"/>
-    <div class="error-msg">請輸入回報人員姓名</div>
+  <!-- STEP 4: Process -->
+  <div class="step" id="step-4">
+    <div class="step-label">步驟 4</div>
+    <div class="step-question">故障描述</div>
+    <textarea class="big-input" id="input-process" rows="4" placeholder="描述故障情況或處理過程...（選填）"></textarea>
+    <div class="skip-link" onclick="nextStep()">略過此步驟</div>
   </div>
 
-  <!-- Submit -->
-  <div class="loading" id="loading"><div class="spinner"></div>送出中...</div>
-  <button class="submit-btn" id="submit-btn" onclick="submitReport()">送出回報</button>
+  <!-- STEP 5: Crew -->
+  <div class="step" id="step-5">
+    <div class="step-label">步驟 5</div>
+    <div class="step-question">你是誰？</div>
+    <div id="field-crew">
+      <input class="big-input" id="input-crew" type="text" placeholder="輸入姓名" autocomplete="name" onkeydown="if(event.key==='Enter')nextStep()"/>
+      <div class="input-error">請輸入回報人員姓名</div>
+    </div>
+  </div>
+
+  <!-- STEP 6: 確認 -->
+  <div class="step" id="step-6">
+    <div class="step-label">確認送出</div>
+    <div class="step-question">確認回報內容</div>
+    <div class="confirm-list">
+      <div class="confirm-row"><div class="confirm-label">設備種類</div><div class="confirm-value" id="confirm-kind">-</div></div>
+      <div class="confirm-row"><div class="confirm-label">設備編號</div><div class="confirm-value" id="confirm-number">-</div></div>
+      <div class="confirm-row"><div class="confirm-label">狀態</div><div class="confirm-value" id="confirm-status">-</div></div>
+      <div class="confirm-row"><div class="confirm-label">故障描述</div><div class="confirm-value" id="confirm-process" style="color:#6b7280">-</div></div>
+      <div class="confirm-row"><div class="confirm-label">回報人員</div><div class="confirm-value" id="confirm-crew">-</div></div>
+    </div>
+  </div>
 
 </div>
 
-<!-- Success Screen -->
-<div class="success-screen" id="success-screen">
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <button class="next-btn" id="next-btn" onclick="nextStep()" disabled>下一步</button>
+</div>
+
+<!-- SUCCESS -->
+<div class="success-wrap" id="success-wrap" style="display:none">
   <div class="success-icon">✅</div>
   <div class="success-title">回報成功！</div>
   <div class="success-sub" id="success-detail"></div>
@@ -147,51 +178,117 @@ textarea.text-input{resize:none;line-height:1.5}
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbTaNroJX1M7lz1fZS6BiiUFUJEzc2wCKnKw9jFhjYVUQKN-J-bczpmFfpKOMMHV12/exec';
-
 const KINDS = ['TR','RTG','CH','GC','FL','SL','ESL','SP','RS','PPG','ARMGC'];
+const TOTAL_STEPS = 6;
 
+let currentStep = 1;
 let selectedKind = '';
 let selectedStatus = '';
 
 // 建立種類按鈕
 document.getElementById('kind-grid').innerHTML = KINDS.map(k=>
-  `<button class="sel-btn kind-btn" onclick="selectKind('${k}',this)">${k}</button>`
+  `<button class="kind-btn" onclick="selectKind('${k}',this)">${k}</button>`
 ).join('');
+
+function updateProgress(){
+  const pct = (currentStep / TOTAL_STEPS * 100).toFixed(0);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('step-counter').textContent = currentStep + ' / ' + TOTAL_STEPS;
+}
+
+function goToStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active','prev'));
+  document.querySelectorAll('.step').forEach((s,i)=>{
+    if(i+1 < n) s.classList.add('prev');
+  });
+  document.getElementById('step-'+n).classList.add('active');
+  currentStep = n;
+  updateProgress();
+  updateNextBtn();
+
+  // Auto focus input
+  const input = document.getElementById('step-'+n)?.querySelector('input, textarea');
+  if(input) setTimeout(()=>input.focus(), 350);
+}
+
+function goBack(){
+  if(currentStep <= 1){ window.location.href='index.html'; return; }
+  goToStep(currentStep - 1);
+}
+
+function nextStep(){
+  if(!validateStep()) return;
+  if(currentStep === TOTAL_STEPS){
+    submitReport();
+    return;
+  }
+  if(currentStep === TOTAL_STEPS - 1){
+    // 填寫確認頁
+    document.getElementById('confirm-kind').textContent = selectedKind;
+    document.getElementById('confirm-number').textContent = selectedKind + '-' + document.getElementById('input-number').value.trim();
+    document.getElementById('confirm-status').textContent = selectedStatus;
+    document.getElementById('confirm-process').textContent = document.getElementById('input-process').value.trim() || '（無）';
+    document.getElementById('confirm-crew').textContent = document.getElementById('input-crew').value.trim();
+    document.getElementById('next-btn').textContent = '✓ 送出回報';
+    document.getElementById('next-btn').style.background = '#16a34a';
+  }
+  goToStep(currentStep + 1);
+}
+
+function validateStep(){
+  if(currentStep === 1) return !!selectedKind;
+  if(currentStep === 2){
+    const v = document.getElementById('input-number').value.trim();
+    document.getElementById('field-number').classList.toggle('show-error', !v);
+    return !!v;
+  }
+  if(currentStep === 3) return !!selectedStatus;
+  if(currentStep === 5){
+    const v = document.getElementById('input-crew').value.trim();
+    document.getElementById('field-crew').classList.toggle('show-error', !v);
+    return !!v;
+  }
+  return true;
+}
+
+function updateNextBtn(){
+  const btn = document.getElementById('next-btn');
+  btn.disabled = false;
+  btn.style.background = '';
+  if(currentStep === 1){ btn.disabled = !selectedKind; btn.textContent = '下一步'; }
+  else if(currentStep === 2) btn.textContent = '下一步';
+  else if(currentStep === 3){ btn.disabled = !selectedStatus; btn.textContent = '下一步'; }
+  else if(currentStep === 4) btn.textContent = '下一步';
+  else if(currentStep === 5) btn.textContent = '下一步';
+  else if(currentStep === 6){ btn.textContent = '✓ 送出回報'; btn.style.background = '#16a34a'; }
+}
 
 function selectKind(kind, btn){
   selectedKind = kind;
   document.querySelectorAll('.kind-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
-  document.getElementById('field-kind').classList.remove('error');
+  document.getElementById('next-btn').disabled = false;
+  // 自動跳下一步
+  setTimeout(()=>nextStep(), 200);
 }
 
 function selectStatus(status, btn){
   selectedStatus = status;
-  document.querySelectorAll('[onclick^="selectStatus"]').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
-  document.getElementById('field-status').classList.remove('error');
-}
-
-function validate(){
-  let ok = true;
-  if(!selectedKind){document.getElementById('field-kind').classList.add('error');ok=false;}
-  if(!document.getElementById('input-number').value.trim()){document.getElementById('field-number').classList.add('error');ok=false;}
-  else document.getElementById('field-number').classList.remove('error');
-  if(!selectedStatus){document.getElementById('field-status').classList.add('error');ok=false;}
-  if(!document.getElementById('input-crew').value.trim()){document.getElementById('field-crew').classList.add('error');ok=false;}
-  else document.getElementById('field-crew').classList.remove('error');
-  return ok;
+  document.getElementById('next-btn').disabled = false;
+  // 自動跳下一步
+  setTimeout(()=>nextStep(), 200);
 }
 
 async function submitReport(){
-  if(!validate()) return;
-
-  const number = document.getElementById('input-number').value.trim();
+  const number = selectedKind + '-' + document.getElementById('input-number').value.trim();
   const process = document.getElementById('input-process').value.trim();
   const crew = document.getElementById('input-crew').value.trim();
 
-  document.getElementById('submit-btn').style.display='none';
-  document.getElementById('loading').style.display='flex';
+  const btn = document.getElementById('next-btn');
+  btn.disabled = true;
+  btn.textContent = '送出中...';
 
   try {
     await fetch(SCRIPT_URL, {
@@ -206,37 +303,41 @@ async function submitReport(){
       })
     });
 
-    // 成功
-    document.getElementById('form-wrap').style.display='none';
-    const screen = document.getElementById('success-screen');
-    screen.style.display='flex';
-    document.getElementById('success-detail').textContent=
-      `${selectedKind} ${number} — ${selectedStatus}\n回報人：${crew}`;
+    document.getElementById('steps-container').style.display='none';
+    document.querySelector('.bottom-bar').style.display='none';
+    document.querySelector('.progress-bar').style.display='none';
+    document.querySelector('.header').style.display='none';
+    const sw = document.getElementById('success-wrap');
+    sw.style.display='flex';
+    document.getElementById('success-detail').textContent = `${number} — ${selectedStatus}\n回報人：${crew}`;
 
   } catch(err){
-    document.getElementById('submit-btn').style.display='block';
-    document.getElementById('loading').style.display='none';
+    btn.disabled = false;
+    btn.textContent = '✓ 送出回報';
+    btn.style.background = '#16a34a';
     alert('送出失敗，請檢查網路連線後再試');
   }
 }
 
 function resetForm(){
-  selectedKind='';
-  selectedStatus='';
-  document.querySelectorAll('.sel-btn').forEach(b=>b.classList.remove('selected'));
+  selectedKind='';selectedStatus='';
+  document.querySelectorAll('.kind-btn,.status-btn').forEach(b=>b.classList.remove('selected'));
   document.getElementById('input-number').value='';
   document.getElementById('input-process').value='';
   document.getElementById('input-crew').value='';
-  document.querySelectorAll('.field').forEach(f=>f.classList.remove('error'));
-  document.getElementById('form-wrap').style.display='block';
-  document.getElementById('success-screen').style.display='none';
-  document.getElementById('submit-btn').style.display='block';
-  document.getElementById('loading').style.display='none';
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active','prev'));
+  document.getElementById('steps-container').style.display='block';
+  document.querySelector('.bottom-bar').style.display='block';
+  document.querySelector('.progress-bar').style.display='block';
+  document.querySelector('.header').style.display='flex';
+  document.getElementById('success-wrap').style.display='none';
+  document.getElementById('next-btn').textContent='下一步';
+  document.getElementById('next-btn').style.background='';
+  goToStep(1);
 }
 
-// 輸入時清除錯誤
-document.getElementById('input-number').addEventListener('input',()=>document.getElementById('field-number').classList.remove('error'));
-document.getElementById('input-crew').addEventListener('input',()=>document.getElementById('field-crew').classList.remove('error'));
+updateProgress();
+updateNextBtn();
 </script>
 </body>
 </html>
