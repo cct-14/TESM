@@ -357,7 +357,8 @@ function selectStatus(status, btn){
 }
 
 async function submitReport(){
-  const number = selectedKind + '-' + document.getElementById('input-number').value.trim();
+  const numberInput = document.getElementById('input-number').value.trim();
+  const number = selectedKind + '-' + numberInput;
   const process = document.getElementById('input-process').value.trim();
   const crew = document.getElementById('input-crew').value.trim();
 
@@ -369,7 +370,7 @@ async function submitReport(){
     const params = new URLSearchParams({
       action: 'write',
       machine_kind: selectedKind,
-      number: number,
+      number: numberInput,
       status: selectedStatus,
       process: process,
       crew: crew
