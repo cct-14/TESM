@@ -1251,15 +1251,15 @@ function updateStatus(newStatus){
   document.getElementById('status-crew').value='';
   document.getElementById('status-note').value='';
 
-  // 送到 Google Sheets
+  // 送到 Google Sheets（img ping 繞過 CORS）
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxliEkHrCaCXAiHza1N0r4Ji80we61tDGbF_kg3GGjAkt-e93zznlFYGrj2lwHcRK5b/exec';
-  const parts = currentModalId.split('-');
   const machine_kind = eq.type;
   const number = currentModalId;
   const params = new URLSearchParams({
     action:'write', machine_kind, number, status:newStatus, process:note||'網頁更新', crew
   });
-  fetch(`${SHEET_URL}?${params}`,{method:'GET',mode:'no-cors'}).catch(()=>{});
+  const img = new Image();
+  img.src = `${SHEET_URL}?${params}`;
 
   // 更新 Modal 標題顯示
   renderModalHistory(currentModalId);
