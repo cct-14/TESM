@@ -141,8 +141,9 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
 .h-dur{font-size:12px;color:#6b7280;min-width:60px}
 .h-author{font-size:12px;color:#4b5563}
 
-/* STATS */
-.stats-page{padding:20px 24px;flex:1}
+.stats-tab{padding:10px 20px;font-size:13px;font-weight:500;color:#6b7280;background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .15s}
+.stats-tab:hover{color:#e2e8f0}
+.stats-tab.active{color:#e2e8f0;border-bottom-color:#3b82f6}
 .stats-page h1{font-size:18px;font-weight:600;margin-bottom:16px}
 .stats-filters{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
 .stats-filters select{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:7px 12px;font-size:13px;color:#e2e8f0;outline:none}
@@ -363,41 +364,111 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
 <!-- STATS -->
 <div class="page" id="page-stats">
   <div class="stats-page">
-    <h1>統計分析</h1>
-    <div class="stats-filters">
-      <select><option>2026年6月</option><option>2026年5月</option><option>2026年4月</option></select>
-      <select><option>所有種類</option><option>TR</option><option>RTG</option><option>CH</option><option>GC</option></select>
+    <h1 data-i18n="stats_title">統計分析</h1>
+
+    <!-- Tab 切換 -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid #21262d">
+      <button class="stats-tab active" id="stab-live" onclick="switchStatsTab('live',this)">⚡ 即時統計</button>
+      <button class="stats-tab" id="stab-history" onclick="switchStatsTab('history',this)">📊 歷史分析</button>
     </div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <h3>妥善率</h3><div class="big-num green">94.2%</div><div class="stat-sub">目標 ≥ 92%</div>
-        <div class="bar-chart" style="margin-top:12px">
-          <div class="bar-row"><div class="bar-label">TR</div><div class="bar-track"><div class="bar-fill" style="width:96%;background:#4ade80"></div></div><span style="font-size:11px;color:#4ade80">96%</span></div>
-          <div class="bar-row"><div class="bar-label">RTG</div><div class="bar-track"><div class="bar-fill" style="width:91%;background:#fb923c"></div></div><span style="font-size:11px;color:#fb923c">91%</span></div>
-          <div class="bar-row"><div class="bar-label">CH</div><div class="bar-track"><div class="bar-fill" style="width:97%;background:#4ade80"></div></div><span style="font-size:11px;color:#4ade80">97%</span></div>
-          <div class="bar-row"><div class="bar-label">GC</div><div class="bar-track"><div class="bar-fill" style="width:89%;background:#f87171"></div></div><span style="font-size:11px;color:#f87171">89%</span></div>
+
+    <!-- TAB 1: 即時統計 -->
+    <div id="stats-live">
+      <!-- KPI 行 -->
+      <div id="live-kpi-row" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px"></div>
+      <!-- 兩欄 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <!-- 狀態分布 -->
+        <div class="stat-card">
+          <h3>狀態分布</h3>
+          <div id="live-status-bars" style="margin-top:12px"></div>
+        </div>
+        <!-- 種類妥善率 -->
+        <div class="stat-card">
+          <h3>各種類妥善率（Available + Running）</h3>
+          <div id="live-type-bars" style="margin-top:12px"></div>
         </div>
       </div>
-      <div class="stat-card">
-        <h3>故障率</h3><div class="big-num orange">5.8%</div><div class="stat-sub">本月共 47 次故障</div>
-        <div class="bar-chart" style="margin-top:12px">
-          <div class="bar-row"><div class="bar-label">週一</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:#fb923c"></div></div><span style="font-size:11px;color:#6b7280">8</span></div>
-          <div class="bar-row"><div class="bar-label">週二</div><div class="bar-track"><div class="bar-fill" style="width:22%;background:#fb923c"></div></div><span style="font-size:11px;color:#6b7280">6</span></div>
-          <div class="bar-row"><div class="bar-label">週三</div><div class="bar-track"><div class="bar-fill" style="width:40%;background:#fb923c"></div></div><span style="font-size:11px;color:#6b7280">11</span></div>
-          <div class="bar-row"><div class="bar-label">週四</div><div class="bar-track"><div class="bar-fill" style="width:26%;background:#fb923c"></div></div><span style="font-size:11px;color:#6b7280">7</span></div>
-          <div class="bar-row"><div class="bar-label">週五</div><div class="bar-track"><div class="bar-fill" style="width:56%;background:#f87171"></div></div><span style="font-size:11px;color:#f87171">15</span></div>
+      <!-- 整體數字 -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        <div class="stat-card" style="text-align:center">
+          <h3>整體妥善率</h3>
+          <div class="big-num green" id="live-avail-rate">-</div>
+          <div class="stat-sub">Available + Running / 總數</div>
         </div>
-      </div>
-      <div class="stat-card">
-        <h3>可用率</h3><div class="big-num blue">89.1%</div><div class="stat-sub">平均維修時間 2.3 hrs</div>
-        <div class="bar-chart" style="margin-top:12px">
-          <div class="bar-row"><div class="bar-label">&lt; 1hr</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:#60a5fa"></div></div><span style="font-size:11px;color:#60a5fa">28</span></div>
-          <div class="bar-row"><div class="bar-label">1-3hr</div><div class="bar-track"><div class="bar-fill" style="width:32%;background:#60a5fa"></div></div><span style="font-size:11px;color:#60a5fa">15</span></div>
-          <div class="bar-row"><div class="bar-label">3-8hr</div><div class="bar-track"><div class="bar-fill" style="width:10%;background:#fb923c"></div></div><span style="font-size:11px;color:#fb923c">4</span></div>
-          <div class="bar-row"><div class="bar-label">&gt; 8hr</div><div class="bar-track"><div class="bar-fill" style="width:4%;background:#f87171"></div></div><span style="font-size:11px;color:#f87171">0</span></div>
+        <div class="stat-card" style="text-align:center">
+          <h3>緊急搶修中</h3>
+          <div class="big-num orange" id="live-emerg-count">-</div>
+          <div class="stat-sub">需要立即處理</div>
+        </div>
+        <div class="stat-card" style="text-align:center">
+          <h3>停機設備</h3>
+          <div class="big-num" style="color:#94a3b8" id="live-oos-count">-</div>
+          <div class="stat-sub">Out Of Service + Damaged</div>
         </div>
       </div>
     </div>
+
+    <!-- TAB 2: 歷史分析 -->
+    <div id="stats-history" style="display:none">
+      <!-- 篩選列 -->
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
+        <select id="hist-type-filter" style="background:#161b22;border:1px solid #21262d;border-radius:8px;padding:7px 12px;font-size:13px;color:#e2e8f0;outline:none">
+          <option value="all">所有種類</option>
+          <option value="TR">TR</option><option value="RTG">RTG</option><option value="GC">GC</option>
+          <option value="CH">CH</option><option value="FL">FL</option><option value="SL">SL</option>
+          <option value="ESL">ESL</option><option value="SP">SP</option><option value="RS">RS</option>
+          <option value="PPG">PPG</option><option value="ARMGC">ARMGC</option>
+        </select>
+        <div style="display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:6px 12px">
+          <span style="font-size:12px;color:#6b7280">從</span>
+          <input type="date" id="hist-date-from" style="background:transparent;border:none;color:#e2e8f0;font-size:13px;outline:none"/>
+          <span style="font-size:12px;color:#6b7280">至</span>
+          <input type="date" id="hist-date-to" style="background:transparent;border:none;color:#e2e8f0;font-size:13px;outline:none"/>
+        </div>
+        <button onclick="loadHistoryStats()" style="padding:7px 16px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">查詢</button>
+        <div id="hist-sheet-status" style="font-size:12px;color:#6b7280"></div>
+      </div>
+
+      <!-- Google Sheets 連線設定 -->
+      <div id="hist-sheet-setup" style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">📋 Google Sheets 連線</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input id="hist-sheet-url" placeholder="貼上 Apps Script 網址 (https://script.google.com/...)" 
+            style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 12px;font-size:12px;color:#e2e8f0;outline:none"/>
+          <button onclick="saveSheetUrl()" style="padding:8px 14px;background:#21262d;border:1px solid #30363d;color:#e2e8f0;border-radius:6px;font-size:12px;cursor:pointer">儲存</button>
+        </div>
+        <div style="font-size:11px;color:#4b5563;margin-top:6px">儲存後點「查詢」即可載入資料</div>
+      </div>
+
+      <!-- 歷史統計結果 -->
+      <div id="hist-results">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">
+          <div class="stat-card" style="text-align:center">
+            <h3>故障次數</h3>
+            <div class="big-num orange" id="hist-fault-count">-</div>
+            <div class="stat-sub" id="hist-fault-period">選擇時間範圍後查詢</div>
+          </div>
+          <div class="stat-card" style="text-align:center">
+            <h3>平均維修時長</h3>
+            <div class="big-num blue" id="hist-avg-repair">-</div>
+            <div class="stat-sub">小時</div>
+          </div>
+          <div class="stat-card" style="text-align:center">
+            <h3>最常見故障</h3>
+            <div style="font-size:18px;font-weight:600;color:#e2e8f0;margin:8px 0" id="hist-top-fault">-</div>
+            <div class="stat-sub" id="hist-top-fault-count">-</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <h3>故障紀錄明細</h3>
+          <div id="hist-table" style="margin-top:12px">
+            <div style="color:#6b7280;font-size:13px;text-align:center;padding:20px">尚未載入資料，請設定 Google Sheets 網址並查詢</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -464,12 +535,21 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
     </div>
     <div class="modal-status-btns">
       <span>Mark as:</span>
-      <button class="mark-btn" style="background:#166534;color:#4ade80">Available</button>
-      <button class="mark-btn" style="background:#1d4ed8;color:#60a5fa">Running</button>
-      <button class="mark-btn" style="background:#9a3412;color:#fb923c">Emergency</button>
-      <button class="mark-btn" style="background:#374151;color:#94a3b8">Out Of Service</button>
-      <button class="mark-btn" style="background:#7e22ce;color:#c084fc">Planned</button>
-      <button class="mark-btn" style="background:#991b1b;color:#f87171">Damaged</button>
+      <button class="mark-btn" style="background:#166534;color:#4ade80" onclick="selectStatus('Available',this)">Available</button>
+      <button class="mark-btn" style="background:#1d4ed8;color:#60a5fa" onclick="selectStatus('Running',this)">Running</button>
+      <button class="mark-btn" style="background:#9a3412;color:#fb923c" onclick="selectStatus('Emergency Maintenance',this)">Emergency</button>
+      <button class="mark-btn" style="background:#374151;color:#94a3b8" onclick="selectStatus('Out Of Service',this)">Out Of Service</button>
+      <button class="mark-btn" style="background:#7e22ce;color:#c084fc" onclick="selectStatus('Planned Maintenance',this)">Planned</button>
+      <button class="mark-btn" style="background:#991b1b;color:#f87171" onclick="selectStatus('Damaged',this)">Damaged</button>
+    </div>
+    <!-- 回報人員 + 備註 + 送出 -->
+    <div style="padding:12px 24px;border-bottom:1px solid #21262d;display:flex;gap:10px;align-items:center">
+      <input id="status-crew" placeholder="回報人員" style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:12px;color:#e2e8f0;outline:none"/>
+      <input id="status-note" placeholder="備註（選填）" style="flex:2;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:12px;color:#e2e8f0;outline:none"/>
+      <button id="submit-status-btn" onclick="submitStatus()" disabled
+        style="padding:7px 18px;background:#21262d;color:#4b5563;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:not-allowed;white-space:nowrap;transition:all .2s">
+        送出
+      </button>
     </div>
     <div class="modal-history">
       <h3>Status History</h3>
@@ -777,7 +857,140 @@ function renderEq(){
   }
 }
 
-// ── CHANGELOG ──────────────────────────────────────────
+// ── STATS ──────────────────────────────────────────────
+function switchStatsTab(tab, btn){
+  document.querySelectorAll('.stats-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('stats-live').style.display = tab==='live'?'block':'none';
+  document.getElementById('stats-history').style.display = tab==='history'?'block':'none';
+  if(tab==='live') renderLiveStats();
+}
+
+function renderLiveStats(){
+  const total = EQUIPMENT.length;
+  const counts = {};
+  Object.keys(STATUS_CFG).forEach(s=>counts[s]=0);
+  EQUIPMENT.forEach(e=>{ if(counts[e.status]!==undefined) counts[e.status]++; });
+
+  const available = (counts['Available']||0) + (counts['Running']||0);
+  const broken = (counts['Out Of Service']||0) + (counts['Damaged']||0) + (counts['Emergency Maintenance']||0);
+  const availRate = ((available/total)*100).toFixed(1);
+
+  // KPI row
+  const kpiColors = {
+    'Available':'#4ade80','Running':'#60a5fa','Emergency Maintenance':'#fb923c',
+    'Out Of Service':'#94a3b8','Planned Maintenance':'#c084fc','Damaged':'#f87171'
+  };
+  document.getElementById('live-kpi-row').innerHTML = Object.keys(STATUS_CFG).map(s=>`
+    <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:#6b7280;margin-bottom:4px">${s.replace(' Maintenance','')}</div>
+      <div style="font-size:22px;font-weight:700;color:${kpiColors[s]}">${counts[s]||0}</div>
+    </div>`).join('');
+
+  // 狀態分布 bars
+  document.getElementById('live-status-bars').innerHTML = Object.keys(STATUS_CFG).map(s=>{
+    const pct = total>0?((counts[s]||0)/total*100).toFixed(1):0;
+    const color = kpiColors[s];
+    return `<div class="bar-row" style="margin-bottom:8px">
+      <div class="bar-label" style="min-width:130px;font-size:11px">${s.replace(' Maintenance','')}</div>
+      <div class="bar-track" style="flex:1"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span style="font-size:11px;color:${color};min-width:40px;text-align:right">${counts[s]||0}</span>
+    </div>`;
+  }).join('');
+
+  // 種類妥善率
+  const types = [...new Set(EQUIPMENT.map(e=>e.type))].sort();
+  document.getElementById('live-type-bars').innerHTML = types.map(type=>{
+    const typeEqs = EQUIPMENT.filter(e=>e.type===type);
+    const good = typeEqs.filter(e=>e.status==='Available'||e.status==='Running').length;
+    const pct = typeEqs.length>0?(good/typeEqs.length*100).toFixed(0):0;
+    const color = pct>=90?'#4ade80':pct>=70?'#fb923c':'#f87171';
+    return `<div class="bar-row" style="margin-bottom:8px">
+      <div class="bar-label" style="min-width:60px;font-size:11px">${type}</div>
+      <div class="bar-track" style="flex:1"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span style="font-size:11px;color:${color};min-width:40px;text-align:right">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('live-avail-rate').textContent = availRate + '%';
+  document.getElementById('live-emerg-count').textContent = counts['Emergency Maintenance']||0;
+  document.getElementById('live-oos-count').textContent = (counts['Out Of Service']||0)+(counts['Damaged']||0);
+}
+
+let histSheetUrl = '';
+
+function saveSheetUrl(){
+  histSheetUrl = document.getElementById('hist-sheet-url').value.trim();
+  if(histSheetUrl){
+    document.getElementById('hist-sheet-status').textContent='✓ 網址已儲存';
+    document.getElementById('hist-sheet-status').style.color='#4ade80';
+  }
+}
+
+async function loadHistoryStats(){
+  const from = document.getElementById('hist-date-from').value;
+  const to = document.getElementById('hist-date-to').value;
+  const type = document.getElementById('hist-type-filter').value;
+  const status = document.getElementById('hist-sheet-status');
+
+  if(!histSheetUrl){
+    status.textContent='⚠ 請先設定 Google Sheets 網址';
+    status.style.color='#fb923c';
+    return;
+  }
+
+  status.textContent='載入中...';
+  status.style.color='#6b7280';
+
+  try {
+    const params = new URLSearchParams({action:'getHistory', from, to, type});
+    const res = await fetch(`${histSheetUrl}?${params}`);
+    const data = await res.json();
+
+    if(data.error){ status.textContent='❌ '+data.error; status.style.color='#f87171'; return; }
+
+    const rows = data.rows || [];
+    status.textContent=`✓ 載入 ${rows.length} 筆`;
+    status.style.color='#4ade80';
+
+    document.getElementById('hist-fault-count').textContent = rows.length;
+    document.getElementById('hist-fault-period').textContent = `${from||'全部'} ~ ${to||'全部'}`;
+
+    const avgRepair = rows.length>0?(rows.reduce((s,r)=>s+(parseFloat(r.duration)||0),0)/rows.length).toFixed(1):'-';
+    document.getElementById('hist-avg-repair').textContent = avgRepair;
+
+    const faultMap = {};
+    rows.forEach(r=>{ if(r.fault) faultMap[r.fault]=(faultMap[r.fault]||0)+1; });
+    const topFault = Object.entries(faultMap).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('hist-top-fault').textContent = topFault?topFault[0]:'-';
+    document.getElementById('hist-top-fault-count').textContent = topFault?`共 ${topFault[1]} 次`:'-';
+
+    document.getElementById('hist-table').innerHTML = rows.length===0
+      ? '<div style="color:#6b7280;font-size:13px;text-align:center;padding:20px">查無資料</div>'
+      : `<table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="border-bottom:1px solid #21262d">
+            <th style="padding:8px;text-align:left;color:#6b7280">時間</th>
+            <th style="padding:8px;text-align:left;color:#6b7280">設備</th>
+            <th style="padding:8px;text-align:left;color:#6b7280">種類</th>
+            <th style="padding:8px;text-align:left;color:#6b7280">故障原因</th>
+            <th style="padding:8px;text-align:left;color:#6b7280">維修時長</th>
+            <th style="padding:8px;text-align:left;color:#6b7280">人員</th>
+          </tr></thead>
+          <tbody>${rows.map(r=>`<tr style="border-bottom:1px solid #21262d22">
+            <td style="padding:8px;color:#94a3b8">${r.date||''}</td>
+            <td style="padding:8px;color:#e2e8f0;font-weight:500">${r.machine_id||''}</td>
+            <td style="padding:8px;color:#6b7280">${r.machine_type||''}</td>
+            <td style="padding:8px;color:#e2e8f0">${r.fault||''}</td>
+            <td style="padding:8px;color:#60a5fa">${r.duration||'-'} hrs</td>
+            <td style="padding:8px;color:#6b7280">${r.crew||''}</td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+  } catch(err){
+    status.textContent='❌ 連線失敗：'+err.message;
+    status.style.color='#f87171';
+  }
+}
+// ────────────────────────────────────────────────────────
 const CHANGELOG_PASSWORD = 'CCT2026';
 let changelogUnlocked = false;
 let changelogTab = null;
@@ -787,6 +1000,7 @@ const LOGS = [
   {date:'2026/06/20',version:'v1.0.1',type:'improve',content:'新增三語言切換（中文、English、Español）'},
   {date:'2026/06/20',version:'v1.0.2',type:'feature',content:'保養計畫新增三層簽核流程（Leader → Dep. Head → Op. Head）'},
   {date:'2026/06/20',version:'v1.0.3',type:'fix',content:'修復狀態歷史點擊後 KPI 卡片跳轉至即時監控'},
+  {date:'2026/06/20',version:'v1.0.4',type:'feature',content:'統計分析新增雙 Tab：即時統計（自動計算 EQUIPMENT 陣列）+ 歷史分析（可串接 Google Sheets 故障紀錄）'},
 ];
 
 const TYPE_META={
@@ -860,17 +1074,31 @@ function submitLog(){
   const version = document.getElementById('log-version').value.trim();
   const type = document.getElementById('log-type').value;
   const content = document.getElementById('log-content').value.trim();
-  if(!version||!content) return;
+
+  // 驗證
+  const versionEl = document.getElementById('log-version');
+  const contentEl = document.getElementById('log-content');
+  versionEl.style.borderColor = version ? '#30363d' : '#f87171';
+  contentEl.style.borderColor = content ? '#30363d' : '#f87171';
+  if(!version || !content) return;
+
   const now = new Date();
   const date = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
-  LOGS.push({date,version,type,content});
+  LOGS.push({date, version, type, content});
+
+  // 清空表單
+  versionEl.value='';
+  contentEl.value='';
+  versionEl.style.borderColor='#30363d';
+  contentEl.style.borderColor='#30363d';
+
   closeAddLog();
-  document.getElementById('log-version').value='';
-  document.getElementById('log-content').value='';
   renderChangelog();
 }
 // ────────────────────────────────────────────────────────
 
+function setStatus(s){activeStatus=s;buildMonitor();}
+function setType(t){activeType=t;buildMonitor();}
 function goToMonitor(status){
   activeStatus=status;
   activeType='All';
@@ -878,7 +1106,6 @@ function goToMonitor(status){
   showPage('monitor',tab);
   buildMonitor();
 }
-function setType(t){activeType=t;buildMonitor();}
 function filterEq(){renderEq();}
 function setView(v,btn){viewMode=v;document.querySelectorAll('.v-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderEq();}
 
@@ -922,7 +1149,6 @@ function openModal(id,type,status){
       </div>
     </div>`;
   }).join('');
-  document.getElementById('modal-overlay').classList.add('open');
 }
 
 function toggleHistoryDetail(i){
@@ -939,7 +1165,7 @@ function toggleHistoryDetail(i){
 }
 
 function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.remove('open');}
-function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');tab.classList.add('active');if(id==='changelog')renderChangelog();}
+function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');tab.classList.add('active');if(id==='changelog')renderChangelog();if(id==='stats')renderLiveStats();}
 
 const MAINT_DATA=[
   {id:'CH-069',title:'CH-069 — 煞車系統更換',desc:'前後煞車片更換、煞車油更換',meta:'申請人：alfredo.bony　2026/06/16 08:00　預計時長：6 hrs',applicant:'alfredo.bony',date:'2026/06/16 08:00',duration:'6 hrs',approvals:[{role:'Leader',status:'done',by:'r.rodriguez',time:'2026/06/16 09:10',comment:'確認需要更換'},{role:'Dep. Head',status:'done',by:'a.hudson',time:'2026/06/16 11:30',comment:'批准'},{role:'Op. Head',status:'done',by:'c.escorcia',time:'2026/06/16 14:00',comment:'同意執行'}]},
@@ -948,7 +1174,123 @@ const MAINT_DATA=[
   {id:'FL-08',title:'FL-08 — 叉架更換',desc:'叉架磨損超標，需全部更換',meta:'申請人：hazael.peñafiel　2026/06/15 10:00　預計時長：12 hrs',applicant:'hazael.peñafiel',date:'2026/06/15 10:00',duration:'12 hrs',approvals:[{role:'Leader',status:'done',by:'r.rodriguez',time:'2026/06/15 11:20',comment:'確認磨損嚴重'},{role:'Dep. Head',status:'rejected',by:'a.hudson',time:'2026/06/15 15:00',comment:'預算不足，下月再安排'},{role:'Op. Head',status:'waiting',by:'',time:'',comment:''}]},
 ];
 
-let currentMaintId=null;
+let selectedNewStatus = null;
+
+function selectStatus(status, btn){
+  selectedNewStatus = status;
+  // 所有按鈕恢復半透明
+  document.querySelectorAll('.mark-btn').forEach(b=>{
+    b.style.opacity='0.45';
+    b.style.outline='none';
+  });
+  // 選中的按鈕高亮
+  btn.style.opacity='1';
+  btn.style.outline='2px solid white';
+  // 啟用送出按鈕
+  const submitBtn = document.getElementById('submit-status-btn');
+  submitBtn.disabled = false;
+  submitBtn.style.background='#3b82f6';
+  submitBtn.style.color='#fff';
+  submitBtn.style.cursor='pointer';
+}
+
+function submitStatus(){
+  if(!selectedNewStatus || !currentModalId) return;
+  updateStatus(selectedNewStatus);
+  // 重置按鈕狀態
+  selectedNewStatus = null;
+  document.querySelectorAll('.mark-btn').forEach(b=>{
+    b.style.opacity='1';
+    b.style.outline='none';
+  });
+  const submitBtn = document.getElementById('submit-status-btn');
+  submitBtn.disabled = true;
+  submitBtn.style.background='#21262d';
+  submitBtn.style.color='#4b5563';
+  submitBtn.style.cursor='not-allowed';
+  submitBtn.textContent='✓ 已送出';
+  setTimeout(()=>submitBtn.textContent='送出', 1500);
+}
+const EQUIPMENT_HISTORY = {};
+
+function openModal(id,type,status){
+  currentModalId = id;
+  document.getElementById('modal-name').textContent=id;
+  document.getElementById('modal-type').textContent=`↕ ${type}  ⊙ CCT`;
+  document.getElementById('status-crew').value='';
+  document.getElementById('status-note').value='';
+  renderModalHistory(id);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function updateStatus(newStatus){
+  if(!currentModalId) return;
+  const crew = document.getElementById('status-crew').value.trim() || '網頁操作';
+  const note = document.getElementById('status-note').value.trim();
+
+  // 找到設備並更新狀態
+  const eq = EQUIPMENT.find(e=>e.id===currentModalId);
+  if(!eq) return;
+  const oldStatus = eq.status;
+  eq.status = newStatus;
+
+  // 記錄歷史
+  if(!EQUIPMENT_HISTORY[currentModalId]) EQUIPMENT_HISTORY[currentModalId]=[];
+  const now = new Date();
+  EQUIPMENT_HISTORY[currentModalId].unshift({
+    status: newStatus,
+    time: now.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    dur: '-',
+    author: crew,
+    fault: note || '-',
+    action: `由 ${oldStatus} 改為 ${newStatus}`,
+    notes: note || '狀態更新'
+  });
+
+  // 清空輸入
+  document.getElementById('status-crew').value='';
+  document.getElementById('status-note').value='';
+
+  // 更新 Modal 標題顯示
+  renderModalHistory(currentModalId);
+
+  // 重新渲染監控頁面
+  buildMonitor();
+  buildDashboard();
+}
+
+function renderModalHistory(id){
+  const HISTORY_DETAIL = EQUIPMENT_HISTORY[id] || [
+    {status:'Out Of Service',time:'Jun 16, 2026, 01:48 AM',dur:'-',author:'luis.salazar',
+     notes:'引擎異常停機，等待搶修人員到場',fault:'引擎無法啟動',action:'通報搶修，設置警示'},
+    {status:'Emergency Maintenance',time:'Jun 15, 2026, 08:22 PM',dur:'5.4',author:'esteban.chiari',
+     notes:'更換燃油濾清器及噴油嘴',fault:'燃油系統堵塞',action:'更換燃油濾清器'},
+    {status:'Running',time:'Jun 15, 2026, 07:40 PM',dur:'0.6',author:'hazael.peñafiel',
+     notes:'正常作業中',fault:'-',action:'-'},
+    {status:'Available',time:'Jun 15, 2026, 06:51 PM',dur:'0.8',author:'ricardo.rodriguez',
+     notes:'完成日常保養，待命中',fault:'-',action:'完成日常檢查'},
+  ];
+
+  document.getElementById('modal-history-rows').innerHTML=HISTORY_DETAIL.map((h,i)=>{
+    const cfg=STATUS_CFG[h.status]||STATUS_CFG['Out Of Service'];
+    return `<div class="history-row" onclick="toggleHistoryDetail(${i})" style="cursor:pointer;flex-direction:column;align-items:flex-start;gap:0">
+      <div style="display:flex;align-items:center;gap:12px;width:100%;padding:2px 0">
+        <div class="h-status"><span class="status-pill ${cfg.pill}">${h.status}</span></div>
+        <div class="h-time">${h.time}</div>
+        <div class="h-dur">${h.dur} hrs</div>
+        <div class="h-author">${h.author}</div>
+        <div style="margin-left:auto;color:#4b5563;font-size:12px">▶</div>
+      </div>
+      <div id="hist-detail-${i}" style="display:none;width:100%;margin-top:10px;padding:12px;background:#1c2128;border-radius:8px;border-left:3px solid ${cfg.pill==='sp-em'?'#fb923c':cfg.pill==='sp-av'?'#4ade80':cfg.pill==='sp-ru'?'#60a5fa':cfg.pill==='sp-dm'?'#f87171':'#475569'}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+          <div><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase">故障原因</div><div style="color:#e2e8f0">${h.fault||'-'}</div></div>
+          <div><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase">處理動作</div><div style="color:#e2e8f0">${h.action||'-'}</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px"><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase">備註</div><div style="color:#94a3b8">${h.notes||'-'}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 function getOverallStatus(approvals){
   if(approvals.some(a=>a.status==='rejected')) return 'rejected';
