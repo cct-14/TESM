@@ -224,7 +224,7 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
   <div class="nav-tab" onclick="showPage('monitor',this)" data-i18n="nav_monitor">即時監控</div>
   <div class="nav-tab" onclick="showPage('stats',this)" data-i18n="nav_stats">統計分析</div>
   <div class="nav-tab" onclick="showPage('maintenance',this)" data-i18n="nav_maint">保養計畫</div>
-  <div class="nav-tab" onclick="showPage('changelog',this)" data-i18n="nav_changelog" style="margin-left:auto">📋 更新日誌</div>
+  <div class="nav-tab" onclick="openAdminLock(this)" style="margin-left:auto">⚙️ 管理者</div>
   <div class="nav-right" style="margin-left:0">
     <div class="lang-switcher">
       <button class="lang-btn" onclick="setLang('zh')">中</button>
@@ -240,7 +240,7 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
   <div class="modal" style="max-width:360px">
     <div class="modal-head">
       <div>
-        <div class="modal-eq-name">🔒 更新日誌</div>
+        <div class="modal-eq-name">⚙️ 管理者</div>
         <div class="modal-eq-type" data-i18n="lock_subtitle">請輸入密碼</div>
       </div>
       <button class="modal-close" onclick="closeLock()">✕</button>
@@ -257,46 +257,91 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
   </div>
 </div>
 
-<!-- CHANGELOG PAGE -->
-<div class="page" id="page-changelog">
-  <div style="padding:20px 24px;max-width:900px;width:100%">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <h1 style="font-size:18px;font-weight:600" data-i18n="changelog_title">更新日誌</h1>
-      <button onclick="openAddLogLock()"
-        style="padding:7px 16px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer"
-        data-i18n="changelog_add">+ 新增記錄</button>
+<!-- 管理者頁面 -->
+<div class="page" id="page-admin">
+  <div style="padding:20px 24px;max-width:1000px;width:100%">
+    <h1 style="font-size:18px;font-weight:600;margin-bottom:20px">⚙️ 管理者</h1>
+
+    <!-- 子 Tab -->
+    <div style="display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid #21262d">
+      <button class="stats-tab active" id="atab-eq" onclick="switchAdminTab('eq',this)">🚛 車機管理</button>
+      <button class="stats-tab" id="atab-log" onclick="switchAdminTab('log',this)">📋 更新日誌</button>
     </div>
 
-    <!-- 新增表單 -->
-    <div id="add-log-form" style="display:none;background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px;margin-bottom:16px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-        <div>
-          <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em" data-i18n="log_version">版本</div>
-          <input id="log-version" placeholder="v1.0.1" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none"/>
+    <!-- 車機管理 -->
+    <div id="admin-eq">
+      <!-- 新增車機 -->
+      <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:#e2e8f0">➕ 新增車機</div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">類型</div>
+            <select id="add-eq-type" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none">
+              <option>ARMGC</option><option>CH</option><option>ESL</option><option>FL</option>
+              <option>GC</option><option>PPG</option><option>RS</option><option>RTG</option>
+              <option>SL</option><option>SP</option><option>TR</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">編號</div>
+            <input id="add-eq-number" placeholder="例如 42 或 CCT10" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none;width:160px"/>
+          </div>
+          <button onclick="addEquipment()" style="padding:8px 18px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">新增</button>
+          <div id="add-eq-msg" style="font-size:12px;align-self:center"></div>
         </div>
-        <div>
-          <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em" data-i18n="log_type">類型</div>
-          <select id="log-type" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none">
-            <option value="feature">✨ 新功能</option>
-            <option value="fix">🐛 修復</option>
-            <option value="improve">⚡ 改善</option>
-            <option value="security">🔒 安全</option>
+      </div>
+
+      <!-- 車機清單 -->
+      <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:10px">
+          <div style="font-size:13px;font-weight:600;color:#e2e8f0">目前車機清單</div>
+          <input id="admin-eq-search" placeholder="搜尋..." oninput="renderAdminEqList()" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:5px 10px;font-size:12px;color:#e2e8f0;outline:none;width:180px;margin-left:auto"/>
+          <select id="admin-eq-type-filter" onchange="renderAdminEqList()" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:5px 10px;font-size:12px;color:#e2e8f0;outline:none">
+            <option value="all">所有類型</option>
+            <option>ARMGC</option><option>CH</option><option>ESL</option><option>FL</option>
+            <option>GC</option><option>PPG</option><option>RS</option><option>RTG</option>
+            <option>SL</option><option>SP</option><option>TR</option>
           </select>
         </div>
-      </div>
-      <div style="margin-bottom:12px">
-        <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em" data-i18n="log_content">內容</div>
-        <textarea id="log-content" rows="3" placeholder="描述這次更新的內容..."
-          style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 10px;font-size:13px;color:#e2e8f0;outline:none;resize:none;font-family:inherit"></textarea>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="submitLog()" style="padding:7px 16px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer" data-i18n="log_submit">儲存</button>
-        <button onclick="closeAddLog()" style="padding:7px 16px;background:#21262d;color:#6b7280;border:none;border-radius:6px;font-size:13px;cursor:pointer" data-i18n="log_cancel">取消</button>
+        <div id="admin-eq-list" style="max-height:500px;overflow-y:auto"></div>
       </div>
     </div>
 
-    <!-- 日誌列表 -->
-    <div id="changelog-list"></div>
+    <!-- 更新日誌 -->
+    <div id="admin-log" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:#e2e8f0">更新日誌</div>
+        <button onclick="openAddLog()" style="padding:7px 16px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">+ 新增記錄</button>
+      </div>
+      <div id="add-log-form" style="display:none;background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">版本</div>
+            <input id="log-version" placeholder="v1.0.1" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none"/>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">類型</div>
+            <select id="log-type" style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none">
+              <option value="feature">✨ 新功能</option>
+              <option value="fix">🐛 修復</option>
+              <option value="improve">⚡ 改善</option>
+              <option value="security">🔒 安全</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">內容</div>
+          <textarea id="log-content" rows="3" placeholder="描述這次更新的內容..."
+            style="width:100%;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 10px;font-size:13px;color:#e2e8f0;outline:none;resize:none;font-family:inherit"></textarea>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="submitLog()" style="padding:7px 16px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">儲存</button>
+          <button onclick="closeAddLog()" style="padding:7px 16px;background:#21262d;color:#6b7280;border:none;border-radius:6px;font-size:13px;cursor:pointer">取消</button>
+        </div>
+      </div>
+      <div id="changelog-list"></div>
+    </div>
+
   </div>
 </div>
 
@@ -704,18 +749,29 @@ const STATUS_COLOR={
   'Out Of Service':'#475569','Planned Maintenance':'#c084fc','Damaged':'#f87171'
 };
 
-const EQUIPMENT=[
-  {id:'ARMGC-01',type:'ARMGC',status:'Available'},{id:'ARMGC-02',type:'ARMGC',status:'Running'},{id:'ARMGC-03',type:'ARMGC',status:'Available'},{id:'ARMGC-05',type:'ARMGC',status:'Out Of Service'},
-  {id:'CH-035',type:'CH',status:'Available'},{id:'CH-042',type:'CH',status:'Running'},{id:'CH-044',type:'CH',status:'Running'},{id:'CH-048',type:'CH',status:'Available'},{id:'CH-050',type:'CH',status:'Running'},{id:'CH-052',type:'CH',status:'Available'},{id:'CH-055',type:'CH',status:'Running'},{id:'CH-057',type:'CH',status:'Out Of Service'},{id:'CH-059',type:'CH',status:'Running'},{id:'CH-063',type:'CH',status:'Available'},{id:'CH-064',type:'CH',status:'Running'},{id:'CH-065',type:'CH',status:'Damaged'},{id:'CH-066',type:'CH',status:'Running'},{id:'CH-067',type:'CH',status:'Available'},{id:'CH-069',type:'CH',status:'Emergency Maintenance'},{id:'CH-071',type:'CH',status:'Running'},{id:'CH-072',type:'CH',status:'Available'},{id:'CH-073',type:'CH',status:'Running'},{id:'CH-075',type:'CH',status:'Out Of Service'},{id:'CH-078',type:'CH',status:'Running'},{id:'CH-079',type:'CH',status:'Available'},{id:'CH-080',type:'CH',status:'Running'},{id:'CH-082',type:'CH',status:'Running'},{id:'CH-085',type:'CH',status:'Available'},{id:'CH-086',type:'CH',status:'Planned Maintenance'},{id:'CH-087',type:'CH',status:'Running'},{id:'CH-088',type:'CH',status:'Available'},{id:'CH-089',type:'CH',status:'Running'},{id:'CH-092',type:'CH',status:'Running'},{id:'CH-093',type:'CH',status:'Available'},{id:'CH-094',type:'CH',status:'Running'},{id:'CH-098',type:'CH',status:'Out Of Service'},{id:'CH-102',type:'CH',status:'Running'},{id:'CH-105',type:'CH',status:'Available'},{id:'CH-106',type:'CH',status:'Running'},{id:'CH-107',type:'CH',status:'Running'},{id:'CH-108',type:'CH',status:'Available'},{id:'CH-109',type:'CH',status:'Running'},{id:'CH-111',type:'CH',status:'Available'},{id:'CH-119',type:'CH',status:'Running'},{id:'CH-123',type:'CH',status:'Running'},{id:'CH-140',type:'CH',status:'Available'},
-  {id:'ESL-18',type:'ESL',status:'Running'},{id:'ESL-19',type:'ESL',status:'Available'},{id:'ESL-20',type:'ESL',status:'Running'},{id:'ESL-21',type:'ESL',status:'Out Of Service'},
-  {id:'FL-02',type:'FL',status:'Available'},{id:'FL-03',type:'FL',status:'Running'},{id:'FL-06',type:'FL',status:'Running'},{id:'FL-08',type:'FL',status:'Emergency Maintenance'},{id:'FL-09',type:'FL',status:'Available'},{id:'FL-10',type:'FL',status:'Running'},{id:'FL-13',type:'FL',status:'Available'},{id:'FL-15',type:'FL',status:'Running'},{id:'FL-16',type:'FL',status:'Out Of Service'},{id:'FL-17',type:'FL',status:'Running'},{id:'FL-18',type:'FL',status:'Available'},{id:'FL-19',type:'FL',status:'Running'},{id:'FL-102',type:'FL',status:'Running'},
-  {id:'GC-03/SP-T19',type:'GC',status:'Running'},{id:'GC-05/SP-T21',type:'GC',status:'Available'},{id:'GC-06/SP-T22',type:'GC',status:'Running'},{id:'GC-07/SP-T33',type:'GC',status:'Out Of Service'},{id:'GC-08/SP-T28',type:'GC',status:'Running'},{id:'GC-09/SP-T31',type:'GC',status:'Available'},{id:'GC-10/SP-T32',type:'GC',status:'Running'},{id:'GC-11/SP-T29',type:'GC',status:'Running'},{id:'GC-12/SP-TW01',type:'GC',status:'Planned Maintenance'},{id:'GC-13/SP-TW05',type:'GC',status:'Running'},{id:'GC-15/SP-TW04',type:'GC',status:'Available'},{id:'GC-16/SP-T25',type:'GC',status:'Running'},{id:'GC-17/SP-T23',type:'GC',status:'Running'},
-  {id:'PPG-CCT1',type:'PPG',status:'Available'},{id:'PPG-CCT2',type:'PPG',status:'Running'},{id:'PPG-CCT3',type:'PPG',status:'Running'},{id:'PPG-CCT4',type:'PPG',status:'Out Of Service'},{id:'PPG-CCT5',type:'PPG',status:'Running'},{id:'PPG-CCT6',type:'PPG',status:'Running'},{id:'PPG-CCT7',type:'PPG',status:'Available'},{id:'PPG-CCT8',type:'PPG',status:'Planned Maintenance'},{id:'PPG-CCT9',type:'PPG',status:'Running'},
-  {id:'RS-01',type:'RS',status:'Running'},{id:'RS-02',type:'RS',status:'Available'},{id:'RS-03',type:'RS',status:'Running'},{id:'RS-04',type:'RS',status:'Out Of Service'},{id:'RS-05',type:'RS',status:'Running'},{id:'RS-06',type:'RS',status:'Running'},
-  {id:'RTG-01',type:'RTG',status:'Available'},{id:'RTG-06',type:'RTG',status:'Out Of Service'},{id:'RTG-13',type:'RTG',status:'Running'},{id:'RTG-17',type:'RTG',status:'Emergency Maintenance'},{id:'RTG-18',type:'RTG',status:'Running'},{id:'RTG-21',type:'RTG',status:'Available'},{id:'RTG-24',type:'RTG',status:'Running'},{id:'RTG-25',type:'RTG',status:'Out Of Service'},{id:'RTG-27',type:'RTG',status:'Running'},{id:'RTG-32',type:'RTG',status:'Running'},{id:'RTG-39',type:'RTG',status:'Available'},
-  {id:'SL-01',type:'SL',status:'Running'},{id:'SL-02',type:'SL',status:'Available'},{id:'SL-03',type:'SL',status:'Running'},{id:'SL-04',type:'SL',status:'Running'},{id:'SL-05',type:'SL',status:'Out Of Service'},{id:'SL-06',type:'SL',status:'Running'},{id:'SL-07',type:'SL',status:'Available'},{id:'SL-08',type:'SL',status:'Running'},{id:'SL-15',type:'SL',status:'Running'},
-  {id:'SP-T20',type:'SP',status:'Running'},{id:'SP-TW02',type:'SP',status:'Available'},{id:'SP-01',type:'SP',status:'Running'},{id:'SP-02',type:'SP',status:'Running'},{id:'SP-03',type:'SP',status:'Out Of Service'},{id:'SP-04',type:'SP',status:'Running'},{id:'SP-05',type:'SP',status:'Damaged'},{id:'SP-06',type:'SP',status:'Running'},{id:'SP-07',type:'SP',status:'Available'},{id:'SP-08',type:'SP',status:'Running'},{id:'SP-09',type:'SP',status:'Running'},{id:'SP-10',type:'SP',status:'Running'},{id:'SP-11',type:'SP',status:'Running'},{id:'SP-12',type:'SP',status:'Available'},{id:'SP-13',type:'SP',status:'Running'},{id:'SP-14',type:'SP',status:'Running'},{id:'SP-15',type:'SP',status:'Running'},
-  {id:'TR-05',type:'TR',status:'Running'},{id:'TR-06',type:'TR',status:'Available'},{id:'TR-08',type:'TR',status:'Running'},{id:'TR-10',type:'TR',status:'Running'},{id:'TR-19',type:'TR',status:'Out Of Service'},{id:'TR-20/CH-053',type:'TR',status:'Running'},{id:'TR-25',type:'TR',status:'Available'},{id:'TR-27',type:'TR',status:'Running'},{id:'TR-36',type:'TR',status:'Running'},{id:'TR-40',type:'TR',status:'Running'},{id:'TR-42',type:'TR',status:'Emergency Maintenance'},{id:'TR-43',type:'TR',status:'Running'},{id:'TR-45/CH-110',type:'TR',status:'Available'},{id:'TR-50/CH-096',type:'TR',status:'Running'},{id:'TR-70',type:'TR',status:'Running'},{id:'TR-71',type:'TR',status:'Available'},{id:'TR-72',type:'TR',status:'Running'},{id:'TR-78',type:'TR',status:'Running'},{id:'TR-79',type:'TR',status:'Out Of Service'},{id:'TR-82',type:'TR',status:'Running'},{id:'TR-86',type:'TR',status:'Running'},{id:'TR-90/CH-131',type:'TR',status:'Available'},{id:'TR-92',type:'TR',status:'Running'},{id:'TR-94',type:'TR',status:'Running'},{id:'TR-100',type:'TR',status:'Running'},{id:'TR-103/CH-103',type:'TR',status:'Running'},{id:'TR-108',type:'TR',status:'Damaged'},{id:'TR-111/CH-125',type:'TR',status:'Running'},{id:'TR-118',type:'TR',status:'Available'},{id:'TR-122',type:'TR',status:'Running'},{id:'TR-130',type:'TR',status:'Running'},
+let EQUIPMENT=[
+  // ARMGC
+  {id:'ARMGC-01',type:'ARMGC',status:'Available'},{id:'ARMGC-02',type:'ARMGC',status:'Available'},{id:'ARMGC-03',type:'ARMGC',status:'Available'},{id:'ARMGC-05',type:'ARMGC',status:'Available'},
+  // CH
+  {id:'CH-031',type:'CH',status:'Available'},{id:'CH-032',type:'CH',status:'Available'},{id:'CH-033',type:'CH',status:'Available'},{id:'CH-034',type:'CH',status:'Available'},{id:'CH-035',type:'CH',status:'Available'},{id:'CH-036',type:'CH',status:'Available'},{id:'CH-037',type:'CH',status:'Available'},{id:'CH-038',type:'CH',status:'Available'},{id:'CH-039',type:'CH',status:'Available'},{id:'CH-040',type:'CH',status:'Available'},{id:'CH-041',type:'CH',status:'Available'},{id:'CH-042',type:'CH',status:'Available'},{id:'CH-043',type:'CH',status:'Available'},{id:'CH-044',type:'CH',status:'Available'},{id:'CH-045',type:'CH',status:'Available'},{id:'CH-046',type:'CH',status:'Available'},{id:'CH-047',type:'CH',status:'Available'},{id:'CH-048',type:'CH',status:'Available'},{id:'CH-049',type:'CH',status:'Available'},{id:'CH-050',type:'CH',status:'Available'},{id:'CH-051',type:'CH',status:'Available'},{id:'CH-052',type:'CH',status:'Available'},{id:'CH-053',type:'CH',status:'Available'},{id:'CH-054',type:'CH',status:'Available'},{id:'CH-055',type:'CH',status:'Available'},{id:'CH-056',type:'CH',status:'Available'},{id:'CH-057',type:'CH',status:'Available'},{id:'CH-058',type:'CH',status:'Available'},{id:'CH-059',type:'CH',status:'Available'},{id:'CH-060',type:'CH',status:'Available'},{id:'CH-061',type:'CH',status:'Available'},{id:'CH-062',type:'CH',status:'Available'},{id:'CH-063',type:'CH',status:'Available'},{id:'CH-064',type:'CH',status:'Available'},{id:'CH-065',type:'CH',status:'Available'},{id:'CH-066',type:'CH',status:'Available'},{id:'CH-067',type:'CH',status:'Available'},{id:'CH-068',type:'CH',status:'Available'},{id:'CH-069',type:'CH',status:'Available'},{id:'CH-070',type:'CH',status:'Available'},{id:'CH-071',type:'CH',status:'Available'},{id:'CH-072',type:'CH',status:'Available'},{id:'CH-073',type:'CH',status:'Available'},{id:'CH-074',type:'CH',status:'Available'},{id:'CH-075',type:'CH',status:'Available'},{id:'CH-076',type:'CH',status:'Available'},{id:'CH-077',type:'CH',status:'Available'},{id:'CH-078',type:'CH',status:'Available'},{id:'CH-079',type:'CH',status:'Available'},{id:'CH-080',type:'CH',status:'Available'},{id:'CH-081',type:'CH',status:'Available'},{id:'CH-082',type:'CH',status:'Available'},{id:'CH-083',type:'CH',status:'Available'},{id:'CH-084',type:'CH',status:'Available'},{id:'CH-085',type:'CH',status:'Available'},{id:'CH-086',type:'CH',status:'Available'},{id:'CH-087',type:'CH',status:'Available'},{id:'CH-088',type:'CH',status:'Available'},{id:'CH-089',type:'CH',status:'Available'},{id:'CH-090',type:'CH',status:'Available'},{id:'CH-091',type:'CH',status:'Available'},{id:'CH-092',type:'CH',status:'Available'},{id:'CH-093',type:'CH',status:'Available'},{id:'CH-094',type:'CH',status:'Available'},{id:'CH-095',type:'CH',status:'Available'},{id:'CH-096',type:'CH',status:'Available'},{id:'CH-097',type:'CH',status:'Available'},{id:'CH-098',type:'CH',status:'Available'},{id:'CH-099',type:'CH',status:'Available'},{id:'CH-100',type:'CH',status:'Available'},{id:'CH-101',type:'CH',status:'Available'},{id:'CH-102',type:'CH',status:'Available'},{id:'CH-103',type:'CH',status:'Available'},{id:'CH-104',type:'CH',status:'Available'},{id:'CH-105',type:'CH',status:'Available'},{id:'CH-106',type:'CH',status:'Available'},{id:'CH-107',type:'CH',status:'Available'},{id:'CH-108',type:'CH',status:'Available'},{id:'CH-109',type:'CH',status:'Available'},{id:'CH-110',type:'CH',status:'Available'},{id:'CH-111',type:'CH',status:'Available'},{id:'CH-112',type:'CH',status:'Available'},{id:'CH-113',type:'CH',status:'Available'},{id:'CH-114',type:'CH',status:'Available'},{id:'CH-115',type:'CH',status:'Available'},{id:'CH-116',type:'CH',status:'Available'},{id:'CH-117',type:'CH',status:'Available'},{id:'CH-118',type:'CH',status:'Available'},{id:'CH-119',type:'CH',status:'Available'},{id:'CH-120',type:'CH',status:'Available'},{id:'CH-121',type:'CH',status:'Available'},{id:'CH-122',type:'CH',status:'Available'},{id:'CH-123',type:'CH',status:'Available'},{id:'CH-124',type:'CH',status:'Available'},{id:'CH-125',type:'CH',status:'Available'},{id:'CH-126',type:'CH',status:'Available'},{id:'CH-127',type:'CH',status:'Available'},{id:'CH-128',type:'CH',status:'Available'},{id:'CH-129',type:'CH',status:'Available'},{id:'CH-130',type:'CH',status:'Available'},{id:'CH-131',type:'CH',status:'Available'},{id:'CH-132',type:'CH',status:'Available'},{id:'CH-133',type:'CH',status:'Available'},{id:'CH-134',type:'CH',status:'Available'},{id:'CH-135',type:'CH',status:'Available'},{id:'CH-136',type:'CH',status:'Available'},{id:'CH-137',type:'CH',status:'Available'},{id:'CH-138',type:'CH',status:'Available'},{id:'CH-139',type:'CH',status:'Available'},{id:'CH-140',type:'CH',status:'Available'},{id:'CH-141',type:'CH',status:'Available'},{id:'CH-142',type:'CH',status:'Available'},{id:'CH-143',type:'CH',status:'Available'},{id:'CH-144',type:'CH',status:'Available'},{id:'CH-145',type:'CH',status:'Available'},{id:'CH-146',type:'CH',status:'Available'},{id:'CH-147',type:'CH',status:'Available'},{id:'CH-148',type:'CH',status:'Available'},{id:'CH-149',type:'CH',status:'Available'},{id:'CH-150',type:'CH',status:'Available'},{id:'CH-151',type:'CH',status:'Available'},{id:'CH-152',type:'CH',status:'Available'},{id:'CH-153',type:'CH',status:'Available'},{id:'CH-154',type:'CH',status:'Available'},
+  // ESL
+  {id:'ESL-18',type:'ESL',status:'Available'},{id:'ESL-19',type:'ESL',status:'Available'},{id:'ESL-20',type:'ESL',status:'Available'},{id:'ESL-21',type:'ESL',status:'Available'},
+  // FL
+  {id:'FL-02',type:'FL',status:'Available'},{id:'FL-03',type:'FL',status:'Available'},{id:'FL-06',type:'FL',status:'Available'},{id:'FL-08',type:'FL',status:'Available'},{id:'FL-09',type:'FL',status:'Available'},{id:'FL-10',type:'FL',status:'Available'},{id:'FL-13',type:'FL',status:'Available'},{id:'FL-15',type:'FL',status:'Available'},{id:'FL-16',type:'FL',status:'Available'},{id:'FL-17',type:'FL',status:'Available'},{id:'FL-18',type:'FL',status:'Available'},{id:'FL-19',type:'FL',status:'Available'},{id:'FL-102',type:'FL',status:'Available'},
+  // GC
+  {id:'GC-03/SP-T19',type:'GC',status:'Available'},{id:'GC-05/SP-T21',type:'GC',status:'Available'},{id:'GC-06/SP-T22',type:'GC',status:'Available'},{id:'GC-07/SP-T33',type:'GC',status:'Available'},{id:'GC-08/SP-T27',type:'GC',status:'Available'},{id:'GC-09/SP-T31',type:'GC',status:'Available'},{id:'GC-10/SP-T32',type:'GC',status:'Available'},{id:'GC-11/SP-T29',type:'GC',status:'Available'},{id:'GC-12/SP-TW01',type:'GC',status:'Available'},{id:'GC-13/SP-TW05',type:'GC',status:'Available'},{id:'GC-15/SP-TW04',type:'GC',status:'Available'},{id:'GC-16/SP-T25',type:'GC',status:'Available'},{id:'GC-17/SP-T23',type:'GC',status:'Available'},
+  // PPG
+  {id:'PPG-CCT1',type:'PPG',status:'Available'},{id:'PPG-CCT5',type:'PPG',status:'Available'},{id:'PPG-CCT6',type:'PPG',status:'Available'},{id:'PPG-CCT7',type:'PPG',status:'Available'},{id:'PPG-CCT8',type:'PPG',status:'Available'},{id:'PPG-CCT9',type:'PPG',status:'Available'},{id:'PPG-CCT10',type:'PPG',status:'Available'},{id:'PPG-CCT11',type:'PPG',status:'Available'},{id:'PPG-CCT12',type:'PPG',status:'Available'},
+  // RS
+  {id:'RS-03',type:'RS',status:'Available'},{id:'RS-05',type:'RS',status:'Available'},{id:'RS-06',type:'RS',status:'Available'},{id:'RS-07',type:'RS',status:'Available'},{id:'RS-08',type:'RS',status:'Available'},
+  // RTG
+  {id:'RTG-01',type:'RTG',status:'Available'},{id:'RTG-04',type:'RTG',status:'Available'},{id:'RTG-05',type:'RTG',status:'Available'},{id:'RTG-06',type:'RTG',status:'Available'},{id:'RTG-07',type:'RTG',status:'Available'},{id:'RTG-08',type:'RTG',status:'Available'},{id:'RTG-10',type:'RTG',status:'Available'},{id:'RTG-11',type:'RTG',status:'Available'},{id:'RTG-12',type:'RTG',status:'Available'},{id:'RTG-13',type:'RTG',status:'Available'},{id:'RTG-14',type:'RTG',status:'Available'},{id:'RTG-16',type:'RTG',status:'Available'},{id:'RTG-17',type:'RTG',status:'Available'},{id:'RTG-18',type:'RTG',status:'Available'},{id:'RTG-19',type:'RTG',status:'Available'},{id:'RTG-20',type:'RTG',status:'Available'},{id:'RTG-21',type:'RTG',status:'Available'},{id:'RTG-22',type:'RTG',status:'Available'},{id:'RTG-23',type:'RTG',status:'Available'},{id:'RTG-24',type:'RTG',status:'Available'},{id:'RTG-25',type:'RTG',status:'Available'},{id:'RTG-26',type:'RTG',status:'Available'},{id:'RTG-27',type:'RTG',status:'Available'},{id:'RTG-28',type:'RTG',status:'Available'},{id:'RTG-29',type:'RTG',status:'Available'},{id:'RTG-32',type:'RTG',status:'Available'},{id:'RTG-33',type:'RTG',status:'Available'},{id:'RTG-34',type:'RTG',status:'Available'},{id:'RTG-35',type:'RTG',status:'Available'},{id:'RTG-36',type:'RTG',status:'Available'},{id:'RTG-37',type:'RTG',status:'Available'},{id:'RTG-38',type:'RTG',status:'Available'},{id:'RTG-39',type:'RTG',status:'Available'},{id:'RTG-40',type:'RTG',status:'Available'},{id:'RTG-41',type:'RTG',status:'Available'},{id:'RTG-42',type:'RTG',status:'Available'},{id:'RTG-43',type:'RTG',status:'Available'},{id:'RTG-44',type:'RTG',status:'Available'},
+  // SL
+  {id:'SL-7',type:'SL',status:'Available'},{id:'SL-8',type:'SL',status:'Available'},{id:'SL-10',type:'SL',status:'Available'},{id:'SL-11',type:'SL',status:'Available'},{id:'SL-12',type:'SL',status:'Available'},{id:'SL-13',type:'SL',status:'Available'},{id:'SL-15',type:'SL',status:'Available'},{id:'SL-16',type:'SL',status:'Available'},{id:'SL-17',type:'SL',status:'Available'},
+  // SP
+  {id:'SP-AE01',type:'SP',status:'Available'},{id:'SP-AE02',type:'SP',status:'Available'},{id:'SP-AE03',type:'SP',status:'Available'},{id:'SP-AE05',type:'SP',status:'Available'},{id:'SP-AE06',type:'SP',status:'Available'},{id:'SP-T18',type:'SP',status:'Available'},{id:'SP-T20',type:'SP',status:'Available'},{id:'SP-T24',type:'SP',status:'Available'},{id:'SP-T26',type:'SP',status:'Available'},{id:'SP-T28',type:'SP',status:'Available'},{id:'SP-T30',type:'SP',status:'Available'},{id:'SP-T34',type:'SP',status:'Available'},{id:'SP-TS06',type:'SP',status:'Available'},{id:'SP-TS07',type:'SP',status:'Available'},{id:'SP-TS08',type:'SP',status:'Available'},{id:'SP-TW02',type:'SP',status:'Available'},{id:'SP-TW03',type:'SP',status:'Available'},
+  // TR
+  {id:'TR-01',type:'TR',status:'Available'},{id:'TR-02',type:'TR',status:'Available'},{id:'TR-04',type:'TR',status:'Available'},{id:'TR-05',type:'TR',status:'Available'},{id:'TR-06',type:'TR',status:'Available'},{id:'TR-07',type:'TR',status:'Available'},{id:'TR-08',type:'TR',status:'Available'},{id:'TR-09',type:'TR',status:'Available'},{id:'TR-10',type:'TR',status:'Available'},{id:'TR-11',type:'TR',status:'Available'},{id:'TR-12',type:'TR',status:'Available'},{id:'TR-14',type:'TR',status:'Available'},{id:'TR-15',type:'TR',status:'Available'},{id:'TR-16',type:'TR',status:'Available'},{id:'TR-17',type:'TR',status:'Available'},{id:'TR-18',type:'TR',status:'Available'},{id:'TR-19',type:'TR',status:'Available'},{id:'TR-20',type:'TR',status:'Available'},{id:'TR-21',type:'TR',status:'Available'},{id:'TR-22',type:'TR',status:'Available'},{id:'TR-23',type:'TR',status:'Available'},{id:'TR-24',type:'TR',status:'Available'},{id:'TR-25',type:'TR',status:'Available'},{id:'TR-27',type:'TR',status:'Available'},{id:'TR-31',type:'TR',status:'Available'},{id:'TR-32',type:'TR',status:'Available'},{id:'TR-33',type:'TR',status:'Available'},{id:'TR-34',type:'TR',status:'Available'},{id:'TR-35',type:'TR',status:'Available'},{id:'TR-36',type:'TR',status:'Available'},{id:'TR-37',type:'TR',status:'Available'},{id:'TR-38',type:'TR',status:'Available'},{id:'TR-39',type:'TR',status:'Available'},{id:'TR-40',type:'TR',status:'Available'},{id:'TR-41',type:'TR',status:'Available'},{id:'TR-42',type:'TR',status:'Available'},{id:'TR-43',type:'TR',status:'Available'},{id:'TR-44',type:'TR',status:'Available'},{id:'TR-45',type:'TR',status:'Available'},{id:'TR-46',type:'TR',status:'Available'},{id:'TR-47',type:'TR',status:'Available'},{id:'TR-49',type:'TR',status:'Available'},{id:'TR-50',type:'TR',status:'Available'},{id:'TR-51',type:'TR',status:'Available'},{id:'TR-52',type:'TR',status:'Available'},{id:'TR-53',type:'TR',status:'Available'},{id:'TR-54',type:'TR',status:'Available'},{id:'TR-69',type:'TR',status:'Available'},{id:'TR-70',type:'TR',status:'Available'},{id:'TR-71',type:'TR',status:'Available'},{id:'TR-72',type:'TR',status:'Available'},{id:'TR-73',type:'TR',status:'Available'},{id:'TR-75',type:'TR',status:'Available'},{id:'TR-76',type:'TR',status:'Available'},{id:'TR-77',type:'TR',status:'Available'},{id:'TR-78',type:'TR',status:'Available'},{id:'TR-79',type:'TR',status:'Available'},{id:'TR-80',type:'TR',status:'Available'},{id:'TR-81',type:'TR',status:'Available'},{id:'TR-82',type:'TR',status:'Available'},{id:'TR-83',type:'TR',status:'Available'},{id:'TR-84',type:'TR',status:'Available'},{id:'TR-85',type:'TR',status:'Available'},{id:'TR-86',type:'TR',status:'Available'},{id:'TR-87',type:'TR',status:'Available'},{id:'TR-88',type:'TR',status:'Available'},{id:'TR-89',type:'TR',status:'Available'},{id:'TR-90',type:'TR',status:'Available'},{id:'TR-91',type:'TR',status:'Available'},{id:'TR-92',type:'TR',status:'Available'},{id:'TR-93',type:'TR',status:'Available'},{id:'TR-94',type:'TR',status:'Available'},{id:'TR-95',type:'TR',status:'Available'},{id:'TR-96',type:'TR',status:'Available'},{id:'TR-97',type:'TR',status:'Available'},{id:'TR-98',type:'TR',status:'Available'},{id:'TR-99',type:'TR',status:'Available'},{id:'TR-100',type:'TR',status:'Available'},{id:'TR-101',type:'TR',status:'Available'},{id:'TR-102',type:'TR',status:'Available'},{id:'TR-103',type:'TR',status:'Available'},{id:'TR-104',type:'TR',status:'Available'},{id:'TR-105',type:'TR',status:'Available'},{id:'TR-106',type:'TR',status:'Available'},{id:'TR-107',type:'TR',status:'Available'},{id:'TR-108',type:'TR',status:'Available'},{id:'TR-109',type:'TR',status:'Available'},{id:'TR-110',type:'TR',status:'Available'},{id:'TR-111',type:'TR',status:'Available'},{id:'TR-112',type:'TR',status:'Available'},{id:'TR-113',type:'TR',status:'Available'},{id:'TR-114',type:'TR',status:'Available'},{id:'TR-115',type:'TR',status:'Available'},{id:'TR-116',type:'TR',status:'Available'},{id:'TR-117',type:'TR',status:'Available'},{id:'TR-118',type:'TR',status:'Available'},{id:'TR-119',type:'TR',status:'Available'},{id:'TR-120',type:'TR',status:'Available'},{id:'TR-121',type:'TR',status:'Available'},{id:'TR-122',type:'TR',status:'Available'},{id:'TR-123',type:'TR',status:'Available'},{id:'TR-124',type:'TR',status:'Available'},{id:'TR-125',type:'TR',status:'Available'},{id:'TR-126',type:'TR',status:'Available'},{id:'TR-127',type:'TR',status:'Available'},{id:'TR-128',type:'TR',status:'Available'},{id:'TR-129',type:'TR',status:'Available'},{id:'TR-130',type:'TR',status:'Available'},{id:'TR-131',type:'TR',status:'Available'},{id:'TR-132',type:'TR',status:'Available'},{id:'TR-133',type:'TR',status:'Available'},{id:'TR-134',type:'TR',status:'Available'},{id:'TR-135',type:'TR',status:'Available'},{id:'TR-SP1',type:'TR',status:'Available'},{id:'TR-SP2',type:'TR',status:'Available'},
 ];
 
 const REPAIR_DATA=[
@@ -1063,16 +1119,18 @@ async function loadHistoryStats(){
   }
 }
 // ────────────────────────────────────────────────────────
-const CHANGELOG_PASSWORD = 'CCT2026';
-let changelogUnlocked = false;
-let changelogTab = null;
+const ADMIN_PASSWORD = 'CCT2026';
+let adminUnlocked = false;
+let adminNavTab = null;
 
 const LOGS = [
   {date:'2026/06/20',version:'v1.0.0',type:'feature',content:'TESM 正式上線，包含搶修儀表板、即時監控、統計分析、保養計畫四大功能'},
   {date:'2026/06/20',version:'v1.0.1',type:'improve',content:'新增三語言切換（中文、English、Español）'},
   {date:'2026/06/20',version:'v1.0.2',type:'feature',content:'保養計畫新增三層簽核流程（Leader → Dep. Head → Op. Head）'},
   {date:'2026/06/20',version:'v1.0.3',type:'fix',content:'修復狀態歷史點擊後 KPI 卡片跳轉至即時監控'},
-  {date:'2026/06/20',version:'v1.0.4',type:'feature',content:'統計分析新增雙 Tab：即時統計（自動計算 EQUIPMENT 陣列）+ 歷史分析（可串接 Google Sheets 故障紀錄）'},
+  {date:'2026/06/20',version:'v1.0.4',type:'feature',content:'統計分析新增雙 Tab：即時統計 + 歷史分析（串接 Google Sheets）'},
+  {date:'2026/06/24',version:'v1.1.0',type:'feature',content:'新增 Firebase Realtime Database 即時同步，狀態更新延遲降至 2-3 秒'},
+  {date:'2026/06/24',version:'v1.1.1',type:'improve',content:'車機清單更新為完整清單，新增管理者頁面（車機管理 + 更新日誌）'},
 ];
 
 const TYPE_META={
@@ -1082,17 +1140,9 @@ const TYPE_META={
   security:{label:'🔒 安全',color:'#c084fc',bg:'#2e1065'},
 };
 
-function openChangelogLock(tab){
-  changelogTab = tab;
-  if(changelogUnlocked){ showPage('changelog', tab); return; }
-  document.getElementById('lock-overlay').classList.add('open');
-  document.getElementById('lock-input').value='';
-  document.getElementById('lock-error').style.display='none';
-  setTimeout(()=>document.getElementById('lock-input').focus(),100);
-}
-
-function openAddLogLock(){
-  if(changelogUnlocked){ openAddLog(); return; }
+function openAdminLock(tab){
+  adminNavTab = tab;
+  if(adminUnlocked){ showPage('admin', tab); renderAdminEqList(); renderChangelog(); return; }
   document.getElementById('lock-overlay').classList.add('open');
   document.getElementById('lock-input').value='';
   document.getElementById('lock-error').style.display='none';
@@ -1101,11 +1151,11 @@ function openAddLogLock(){
 
 function checkPassword(){
   const val = document.getElementById('lock-input').value;
-  if(val === CHANGELOG_PASSWORD){
-    changelogUnlocked = true;
+  if(val === ADMIN_PASSWORD){
+    adminUnlocked = true;
     document.getElementById('lock-overlay').classList.remove('open');
-    if(changelogTab){ showPage('changelog', changelogTab); changelogTab=null; }
-    openAddLog();
+    if(adminNavTab){ showPage('admin', adminNavTab); adminNavTab=null; }
+    renderAdminEqList();
     renderChangelog();
   } else {
     document.getElementById('lock-error').style.display='block';
@@ -1119,8 +1169,81 @@ function closeLock(e){
     document.getElementById('lock-overlay').classList.remove('open');
 }
 
+// ── 管理者 Tab 切換 ────────────────────────────────────
+function switchAdminTab(tab, btn){
+  document.querySelectorAll('#page-admin .stats-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('admin-eq').style.display  = tab==='eq'  ? 'block':'none';
+  document.getElementById('admin-log').style.display = tab==='log' ? 'block':'none';
+  if(tab==='log') renderChangelog();
+  if(tab==='eq')  renderAdminEqList();
+}
+
+// ── 車機管理 ───────────────────────────────────────────
+function renderAdminEqList(){
+  const search = (document.getElementById('admin-eq-search')?.value||'').toLowerCase();
+  const typeFilter = document.getElementById('admin-eq-type-filter')?.value||'all';
+  const list = document.getElementById('admin-eq-list');
+  if(!list) return;
+
+  const filtered = EQUIPMENT.filter(e=>{
+    return (typeFilter==='all'||e.type===typeFilter) &&
+           (!search||e.id.toLowerCase().includes(search));
+  });
+
+  const grouped = {};
+  filtered.forEach(e=>{ if(!grouped[e.type]) grouped[e.type]=[]; grouped[e.type].push(e); });
+
+  list.innerHTML = Object.keys(grouped).sort().map(type=>{
+    const eqs = grouped[type];
+    return `<div style="border-bottom:1px solid #21262d">
+      <div style="padding:8px 16px;background:#0d1117;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em">${type} (${eqs.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px">
+        ${eqs.map(e=>`
+          <div style="display:inline-flex;align-items:center;gap:6px;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:4px 8px 4px 10px;font-size:12px;color:#e2e8f0">
+            ${e.id}
+            <button onclick="deleteEquipment('${e.id}')" style="background:transparent;border:none;color:#6b7280;cursor:pointer;padding:0 2px;font-size:14px;line-height:1;display:flex;align-items:center" title="刪除">✕</button>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:20px;color:#6b7280;font-size:13px;text-align:center">查無資料</div>';
+}
+
+function addEquipment(){
+  const type = document.getElementById('add-eq-type').value;
+  const number = document.getElementById('add-eq-number').value.trim();
+  const msg = document.getElementById('add-eq-msg');
+
+  if(!number){ msg.textContent='請輸入編號'; msg.style.color='#f87171'; return; }
+
+  const id = type + '-' + number;
+  if(EQUIPMENT.find(e=>e.id===id)){
+    msg.textContent=`${id} 已存在`; msg.style.color='#fb923c'; return;
+  }
+
+  EQUIPMENT.push({id, type, status:'Available'});
+  document.getElementById('add-eq-number').value='';
+  msg.textContent=`✓ 已新增 ${id}`; msg.style.color='#4ade80';
+  setTimeout(()=>msg.textContent='', 3000);
+
+  renderAdminEqList();
+  buildMonitor();
+  buildDashboard();
+}
+
+function deleteEquipment(id){
+  if(!confirm(`確定要從監控清單移除 ${id}？\n（試算表和 Firebase 的歷史資料不會刪除）`)) return;
+  const idx = EQUIPMENT.findIndex(e=>e.id===id);
+  if(idx>-1) EQUIPMENT.splice(idx,1);
+  renderAdminEqList();
+  buildMonitor();
+  buildDashboard();
+}
+
+// ── 更新日誌 ───────────────────────────────────────────
 function renderChangelog(){
   const list = document.getElementById('changelog-list');
+  if(!list) return;
   list.innerHTML = [...LOGS].reverse().map(log=>{
     const m = TYPE_META[log.type]||TYPE_META['feature'];
     return `<div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px 18px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start">
@@ -1144,10 +1267,9 @@ function closeAddLog(){
 }
 function submitLog(){
   const version = document.getElementById('log-version').value.trim();
-  const type = document.getElementById('log-type').value;
+  const type    = document.getElementById('log-type').value;
   const content = document.getElementById('log-content').value.trim();
 
-  // 驗證
   const versionEl = document.getElementById('log-version');
   const contentEl = document.getElementById('log-content');
   versionEl.style.borderColor = version ? '#30363d' : '#f87171';
@@ -1158,7 +1280,6 @@ function submitLog(){
   const date = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
   LOGS.push({date, version, type, content});
 
-  // 清空表單
   versionEl.value='';
   contentEl.value='';
   versionEl.style.borderColor='#30363d';
@@ -1237,7 +1358,7 @@ function toggleHistoryDetail(i){
 }
 
 function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.remove('open');}
-function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');tab.classList.add('active');if(id==='changelog')renderChangelog();if(id==='stats')renderLiveStats();}
+function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');if(tab)tab.classList.add('active');if(id==='admin'){renderAdminEqList();renderChangelog();}if(id==='stats')renderLiveStats();}
 
 const MAINT_DATA=[
   {id:'CH-069',title:'CH-069 — 煞車系統更換',desc:'前後煞車片更換、煞車油更換',meta:'申請人：alfredo.bony　2026/06/16 08:00　預計時長：6 hrs',applicant:'alfredo.bony',date:'2026/06/16 08:00',duration:'6 hrs',approvals:[{role:'Leader',status:'done',by:'r.rodriguez',time:'2026/06/16 09:10',comment:'確認需要更換'},{role:'Dep. Head',status:'done',by:'a.hudson',time:'2026/06/16 11:30',comment:'批准'},{role:'Op. Head',status:'done',by:'c.escorcia',time:'2026/06/16 14:00',comment:'同意執行'}]},
