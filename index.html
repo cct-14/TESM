@@ -268,12 +268,17 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
 <!-- 管理者頁面 -->
 <div class="page" id="page-admin">
   <div style="padding:20px 24px;max-width:1000px;width:100%">
-    <h1 style="font-size:18px;font-weight:600;margin-bottom:20px">⚙️ 管理者</h1>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h1 style="font-size:18px;font-weight:600">⚙️ 管理者 <span id="admin-role-label" style="font-size:13px;color:#6b7280;font-weight:400"></span></h1>
+      <button onclick="logoutAdmin()" style="padding:6px 14px;background:#21262d;border:1px solid #374151;border-radius:6px;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer">登出</button>
+    </div>
 
     <!-- 子 Tab -->
     <div style="display:flex;gap:0;margin-bottom:24px;border-bottom:1px solid #21262d">
-      <button class="stats-tab active" id="atab-eq" onclick="switchAdminTab('eq',this)">🚛 車機管理</button>
-      <button class="stats-tab" id="atab-log" onclick="switchAdminTab('log',this)">📋 更新日誌</button>
+      <button class="stats-tab active" id="atab-eq"  onclick="switchAdminTab('eq',this)" style="display:none">🚛 車機管理</button>
+      <button class="stats-tab"        id="atab-opd" onclick="switchAdminTab('opd',this)" style="display:none">🔗 OPD 配對</button>
+      <button class="stats-tab"        id="atab-log" onclick="switchAdminTab('log',this)" style="display:none">📋 更新日誌</button>
+      <button class="stats-tab"        id="atab-pwd" onclick="switchAdminTab('pwd',this)" style="display:none">🔑 密碼管理</button>
     </div>
 
     <!-- 車機管理 -->
@@ -320,6 +325,32 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
       </div>
     </div>
 
+    <!-- OPD 配對管理 -->
+    <div id="admin-opd" style="display:none">
+      <!-- 新增配對 -->
+      <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:#e2e8f0">🔗 新增 TR/CH 配對</div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">TR</div>
+            <select id="pair-tr-select" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none;min-width:130px"></select>
+          </div>
+          <div style="font-size:18px;color:#6b7280;padding-bottom:6px">+</div>
+          <div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">CH</div>
+            <select id="pair-ch-select" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none;min-width:130px"></select>
+          </div>
+          <button onclick="addPair()" style="padding:8px 18px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">配對</button>
+          <div id="pair-msg" style="font-size:12px;align-self:center"></div>
+        </div>
+      </div>
+      <!-- 配對清單 -->
+      <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;overflow:hidden">
+        <div style="padding:10px 16px;border-bottom:1px solid #21262d;font-size:13px;font-weight:600;color:#e2e8f0">目前配對清單</div>
+        <div id="pair-list" style="padding:12px 16px"></div>
+      </div>
+    </div>
+
     <!-- 更新日誌 -->
     <div id="admin-log" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -353,6 +384,36 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
         </div>
       </div>
       <div id="changelog-list"></div>
+    </div>
+
+    <!-- 密碼管理（僅 14 可見）-->
+    <div id="admin-pwd" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:16px;max-width:480px">
+        <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px">
+          <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:12px">🚛 MTD 密碼</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="pwd-mtd" type="password" placeholder="新密碼" style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none"/>
+            <button onclick="changePassword('mtd')" style="padding:7px 14px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">更改</button>
+          </div>
+          <div id="pwd-mtd-msg" style="font-size:12px;margin-top:6px"></div>
+        </div>
+        <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px">
+          <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:12px">🔗 OPD 密碼</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="pwd-opd" type="password" placeholder="新密碼" style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none"/>
+            <button onclick="changePassword('opd')" style="padding:7px 14px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">更改</button>
+          </div>
+          <div id="pwd-opd-msg" style="font-size:12px;margin-top:6px"></div>
+        </div>
+        <div style="background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px">
+          <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:12px">🔑 14 密碼</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="pwd-14" type="password" placeholder="新密碼" style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none"/>
+            <button onclick="changePassword('14')" style="padding:7px 14px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">更改</button>
+          </div>
+          <div id="pwd-14-msg" style="font-size:12px;margin-top:6px"></div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -426,6 +487,49 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
     <div style="padding:14px 24px;border-top:1px solid #21262d;display:flex;gap:10px;justify-content:flex-end">
       <button onclick="clearCanvas()" style="padding:7px 14px;background:#21262d;color:#6b7280;border:none;border-radius:6px;font-size:13px;cursor:pointer">清除全部</button>
       <button onclick="saveIcon()" style="padding:7px 18px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">✓ 儲存圖示</button>
+    </div>
+  </div>
+</div>
+
+<!-- 配對 Modal -->
+<div class="modal-overlay" id="pair-modal-overlay" onclick="closePairModal(event)">
+  <div class="modal" id="pair-modal-box" style="max-width:600px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-eq-name" id="pair-modal-title"></div>
+        <div class="modal-eq-type">TR / CH 配對組合</div>
+      </div>
+      <button class="modal-close" onclick="closePairModal()">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      <!-- TR -->
+      <div style="padding:16px;border-right:1px solid #21262d">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">TR 牽引車</div>
+        <div id="pair-tr-info"></div>
+        <div class="modal-status-btns" style="padding:10px 0 0;flex-wrap:wrap;gap:6px">
+          <span style="font-size:11px;color:#6b7280;width:100%">更新 TR 狀態：</span>
+          <button class="mark-btn" style="background:#166534;color:#4ade80;font-size:11px;padding:4px 8px" onclick="updatePairedStatus('tr','Available')">Available</button>
+          <button class="mark-btn" style="background:#1d4ed8;color:#60a5fa;font-size:11px;padding:4px 8px" onclick="updatePairedStatus('tr','Running')">Running</button>
+          <button class="mark-btn" style="background:#9a3412;color:#fb923c;font-size:11px;padding:4px 8px" onclick="updatePairedStatus('tr','Emergency Maintenance')">Emergency</button>
+          <button class="mark-btn" style="background:#374151;color:#94a3b8;font-size:11px;padding:4px 8px" onclick="updatePairedStatus('tr','Out Of Service')">OOS</button>
+        </div>
+      </div>
+      <!-- CH -->
+      <div style="padding:16px">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">CH 拖車</div>
+        <div id="pair-ch-info"></div>
+        <div class="modal-status-btns" style="padding:10px 0 0;flex-wrap:wrap;gap:6px">
+          <span style="font-size:11px;color:#6b7280;width:100%">更新 CH 狀態：</span>
+          <button class="mark-btn" style="background:#166534;color:#4ade80;font-size:11px;padding:4px 8px" onclick="updatePairedStatus('ch','Available')">Available</button>
+          <button class="mark-btn" style="background:#1d4ed8;color:#60a5fa;font-size:11px;padding:4px 8px" onclick="updatePairedStatus('ch','Running')">Running</button>
+          <button class="mark-btn" style="background:#9a3412;color:#fb923c;font-size:11px;padding:4px 8px" onclick="updatePairedStatus('ch','Emergency Maintenance')">Emergency</button>
+          <button class="mark-btn" style="background:#374151;color:#94a3b8;font-size:11px;padding:4px 8px" onclick="updatePairedStatus('ch','Out Of Service')">OOS</button>
+        </div>
+      </div>
+    </div>
+    <div style="padding:12px 24px;border-top:1px solid #21262d;display:flex;gap:10px;align-items:center">
+      <input id="pair-crew" placeholder="回報人員" style="flex:1;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:12px;color:#e2e8f0;outline:none"/>
+      <input id="pair-note" placeholder="備註（選填）" style="flex:2;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:12px;color:#e2e8f0;outline:none"/>
     </div>
   </div>
 </div>
@@ -837,6 +941,51 @@ const STATUS_COLOR={
   'Out Of Service':'#475569','Planned Maintenance':'#c084fc','Damaged':'#f87171'
 };
 
+// TR-CH 配對 [{tr:'TR-107', ch:'CH-127'}, ...]
+let EQUIPMENT_PAIRS = [];
+
+// 配對組合圖示：左 TR，右 CH，各自顏色
+function iconPaired(trColor, chColor){
+  return `<svg viewBox="0 0 96 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- TR 頭（左半，縮小放左）-->
+    <g transform="translate(0,4) scale(0.52)">
+      <path d="M4 28 L18 22 L18 36 L4 36 Z" fill="${trColor}" opacity=".3" stroke="${trColor}" stroke-width="1.5" stroke-linejoin="round"/>
+      <rect x="4" y="24" width="8" height="6" rx="1" fill="${trColor}" opacity=".4" stroke="${trColor}" stroke-width="1.2"/>
+      <rect x="18" y="28" width="26" height="8" rx="1" fill="${trColor}" opacity=".2" stroke="${trColor}" stroke-width="1.5"/>
+      <circle cx="10" cy="39" r="4" fill="${trColor}" opacity=".4" stroke="${trColor}" stroke-width="1.5"/>
+      <circle cx="30" cy="39" r="4" fill="${trColor}" opacity=".4" stroke="${trColor}" stroke-width="1.5"/>
+      <circle cx="40" cy="39" r="4" fill="${trColor}" opacity=".4" stroke="${trColor}" stroke-width="1.5"/>
+    </g>
+    <!-- 連結器 -->
+    <line x1="50" y1="28" x2="56" y2="28" stroke="#475569" stroke-width="1.5" stroke-dasharray="2 2"/>
+    <!-- CH 拖車（右半，縮小放右）-->
+    <g transform="translate(54,8) scale(0.42)">
+      <rect x="4" y="16" width="88" height="4" rx="1" fill="${chColor}" opacity=".35" stroke="${chColor}" stroke-width="1.5"/>
+      <circle cx="18" cy="32" r="8" fill="${chColor}" opacity=".25" stroke="${chColor}" stroke-width="1.8"/>
+      <circle cx="18" cy="32" r="3" fill="${chColor}" opacity=".4"/>
+      <circle cx="38" cy="32" r="8" fill="${chColor}" opacity=".25" stroke="${chColor}" stroke-width="1.8"/>
+      <circle cx="38" cy="32" r="3" fill="${chColor}" opacity=".4"/>
+      <circle cx="60" cy="32" r="8" fill="${chColor}" opacity=".25" stroke="${chColor}" stroke-width="1.8"/>
+      <circle cx="60" cy="32" r="3" fill="${chColor}" opacity=".4"/>
+    </g>
+  </svg>`;
+}
+
+// 取得某設備的配對夥伴
+function getPairPartner(id){
+  for(const p of EQUIPMENT_PAIRS){
+    if(p.tr===id) return {role:'tr', partner:p.ch, pair:p};
+    if(p.ch===id) return {role:'ch', partner:p.tr, pair:p};
+  }
+  return null;
+}
+
+// 配對後最嚴重的狀態
+const STATUS_SEVERITY = {'Emergency Maintenance':5,'Damaged':4,'Out Of Service':3,'Planned Maintenance':2,'Running':1,'Available':0};
+function worstStatus(s1, s2){
+  return (STATUS_SEVERITY[s1]||0) >= (STATUS_SEVERITY[s2]||0) ? s1 : s2;
+}
+
 let EQUIPMENT=[
   // ARMGC
   {id:'ARMGC-01',type:'ARMGC',status:'Available'},{id:'ARMGC-02',type:'ARMGC',status:'Available'},{id:'ARMGC-03',type:'ARMGC',status:'Available'},{id:'ARMGC-05',type:'ARMGC',status:'Available'},
@@ -996,18 +1145,128 @@ function sortEquipment(){
 function renderEq(){
   sortEquipment();
   const search=document.getElementById('eq-search').value.toLowerCase();
-  const filtered=EQUIPMENT.filter(e=>{
-    return (activeStatus==='All'||e.status===activeStatus)&&(activeType==='All'||e.type===activeType)&&(!search||e.id.toLowerCase().includes(search)||e.type.toLowerCase().includes(search));
+  const pairedCHids = new Set(EQUIPMENT_PAIRS.map(p=>p.ch));
+  const pairedTRids = new Set(EQUIPMENT_PAIRS.map(p=>p.tr));
+
+  // 建立顯示清單
+  let displayList = [];
+  const seen = new Set();
+
+  EQUIPMENT.forEach(e=>{
+    if(seen.has(e.id)) return;
+
+    const pair = getPairPartner(e.id);
+
+    // 搜尋過濾
+    const matchSearch = !search || e.id.toLowerCase().includes(search) ||
+      (pair && pair.partner.toLowerCase().includes(search));
+
+    if(activeType==='All'){
+      // All 模式：配對的 CH 不單獨顯示
+      if(pairedCHids.has(e.id)) return;
+      if(!matchSearch) return;
+      if(activeStatus!=='All' && e.status!==activeStatus){
+        // 配對的 TR，如果 CH 狀態符合也要顯示
+        if(pair && pair.role==='tr'){
+          const chEq = EQUIPMENT.find(x=>x.id===pair.partner);
+          if(!chEq || chEq.status!==activeStatus) return;
+        } else return;
+      }
+      seen.add(e.id);
+      displayList.push({primary: e, sortKey: e.id});
+    } else if(activeType==='TR'){
+      if(e.type!=='TR') return;
+      if(!matchSearch) return;
+      if(activeStatus!=='All' && e.status!==activeStatus) return;
+      seen.add(e.id);
+      displayList.push({primary: e, sortKey: e.id});
+    } else if(activeType==='CH'){
+      // CH 模式：配對的 CH 透過配對格顯示，按 CH 編號排序
+      if(pairedCHids.has(e.id)){
+        // 找對應的 TR
+        const p = EQUIPMENT_PAIRS.find(x=>x.ch===e.id);
+        if(p && !seen.has(p.tr)){
+          const trEq = EQUIPMENT.find(x=>x.id===p.tr);
+          if(!trEq) return;
+          if(activeStatus!=='All' && e.status!==activeStatus) return;
+          if(!matchSearch) return;
+          seen.add(p.tr); seen.add(e.id);
+          displayList.push({primary: trEq, sortKey: e.id}); // 按 CH 編號排序
+        }
+        return;
+      }
+      // 非配對的 CH
+      if(e.type!=='CH') return;
+      if(!matchSearch) return;
+      if(activeStatus!=='All' && e.status!==activeStatus) return;
+      seen.add(e.id);
+      displayList.push({primary: e, sortKey: e.id});
+    } else {
+      // 其他類型
+      if(e.type!==activeType) return;
+      if(!matchSearch) return;
+      if(activeStatus!=='All' && e.status!==activeStatus) return;
+      seen.add(e.id);
+      displayList.push({primary: e, sortKey: e.id});
+    }
   });
+
+  // 排序
+  displayList.sort((a,b)=>{
+    const numA = parseInt(a.sortKey.replace(/[^0-9]/g,''))||0;
+    const numB = parseInt(b.sortKey.replace(/[^0-9]/g,''))||0;
+    if(numA!==numB) return numA-numB;
+    return a.sortKey.localeCompare(b.sortKey);
+  });
+
   const container=document.getElementById('eq-container');
-  const color=e=>STATUS_COLOR[e.status]||'#475569';
+  const colorOf=e=>STATUS_COLOR[e.status]||'#475569';
+
   if(viewMode==='grid'){
-    container.innerHTML=`<div class="eq-grid">${filtered.map(e=>{
+    container.innerHTML=`<div class="eq-grid">${displayList.map(({primary: e})=>{
+      const pair = getPairPartner(e.id);
+      if(pair && pair.role==='tr'){
+        const chEq = EQUIPMENT.find(x=>x.id===pair.partner);
+        const trC = colorOf(e), chC = chEq ? colorOf(chEq) : '#475569';
+        const trStatus = e.status, chStatus = chEq ? chEq.status : 'Unknown';
+        return `<div class="eq-card" style="grid-column:span 2;border-color:#30363d;padding:8px 6px;flex-direction:row;gap:6px;height:auto" onclick="openPairModal('${e.id}','${pair.partner}')">
+          <!-- TR 側 -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;min-width:0">
+            <div style="width:7px;height:7px;border-radius:50%;background:${trC};position:absolute;top:0;right:0" title="${trStatus}"></div>
+            <div style="width:44px;height:36px;display:flex;align-items:center;justify-content:center">${icon('TR',trC)}</div>
+            <div style="font-size:9px;color:#94a3b8;text-align:center;word-break:break-all;line-height:1.2">${e.id}</div>
+          </div>
+          <!-- 連結 -->
+          <div style="font-size:13px;flex-shrink:0;align-self:center">🔗</div>
+          <!-- CH 側 -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;min-width:0">
+            <div style="width:7px;height:7px;border-radius:50%;background:${chC};position:absolute;top:0;right:0" title="${chStatus}"></div>
+            <div style="width:44px;height:36px;display:flex;align-items:center;justify-content:center">${icon('CH',chC)}</div>
+            <div style="font-size:9px;color:#94a3b8;text-align:center;word-break:break-all;line-height:1.2">${chEq?chEq.id:pair.partner}</div>
+          </div>
+        </div>`;
+      }
       const cfg=STATUS_CFG[e.status]||STATUS_CFG['Out Of Service'];
-      return `<div class="eq-card ${cfg.cls}" onclick="openModal('${e.id}','${e.type}','${e.status}')"><div class="eq-dot"></div><div class="eq-icon">${icon(e.type,color(e))}</div><div class="eq-name">${e.id}</div></div>`;
+      return `<div class="eq-card ${cfg.cls}" onclick="openModal('${e.id}','${e.type}','${e.status}')"><div class="eq-dot"></div><div class="eq-icon">${icon(e.type,colorOf(e))}</div><div class="eq-name">${e.id}</div></div>`;
     }).join('')}</div>`;
   } else {
-    container.innerHTML=`<div class="eq-list">${filtered.map(e=>{
+    container.innerHTML=`<div class="eq-list">${displayList.map(({primary: e})=>{
+      const pair = getPairPartner(e.id);
+      if(pair && pair.role==='tr'){
+        const chEq = EQUIPMENT.find(x=>x.id===pair.partner);
+        const ws = chEq ? worstStatus(e.status, chEq.status) : e.status;
+        const cfg = STATUS_CFG[ws]||STATUS_CFG['Out Of Service'];
+        const trC = colorOf(e), chC = chEq ? colorOf(chEq) : '#475569';
+        return `<div class="eq-list-item ${cfg.cls}" onclick="openPairModal('${e.id}','${pair.partner}')">
+          <div style="display:flex;gap:4px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${trC};flex-shrink:0;margin-top:2px"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:${chC};flex-shrink:0;margin-top:2px"></div>
+          </div>
+          <div class="list-name">${e.id} 🔗 ${chEq?chEq.id:pair.partner}</div>
+          <div class="list-type">TR/CH</div>
+          <div class="list-status"><span class="status-pill ${cfg.pill}">${ws.replace(' Maintenance','')}</span></div>
+        </div>`;
+      }
       const cfg=STATUS_CFG[e.status]||STATUS_CFG['Out Of Service'];
       return `<div class="eq-list-item ${cfg.cls}" onclick="openModal('${e.id}','${e.type}','${e.status}')"><div class="list-dot"></div><div class="list-name">${e.id}</div><div class="list-type">${e.type}</div><div class="list-status"><span class="status-pill ${cfg.pill}">${e.status}</span></div></div>`;
     }).join('')}</div>`;
@@ -1219,9 +1478,115 @@ async function loadHistoryStats(){
   }
 }
 // ────────────────────────────────────────────────────────
-const ADMIN_PASSWORD = 'CCT2026';
-let adminUnlocked = false;
+// ── 密碼系統 ─────────────────────────────────────────
+let PASSWORDS = { mtd: 'CCTMTD', opd: 'CCTOPD', '14': 'CCT2026' };
+let currentRole = null; // 'mtd' | 'opd' | '14'
 let adminNavTab = null;
+
+// 各角色可見的 tab
+const ROLE_TABS = {
+  mtd: ['eq','log'],
+  opd: ['opd'],
+  '14': ['eq','opd','log','pwd']
+};
+
+function openAdminLock(tab){
+  adminNavTab = tab;
+  if(currentRole){ enterAdmin(); return; }
+  document.getElementById('lock-overlay').classList.add('open');
+  document.getElementById('lock-input').value='';
+  document.getElementById('lock-error').style.display='none';
+  setTimeout(()=>document.getElementById('lock-input').focus(),100);
+}
+
+function checkPassword(){
+  const val = document.getElementById('lock-input').value;
+  if(val === PASSWORDS['14'])       { currentRole='14';  enterAdmin(); }
+  else if(val === PASSWORDS.mtd)    { currentRole='mtd'; enterAdmin(); }
+  else if(val === PASSWORDS.opd)    { currentRole='opd'; enterAdmin(); }
+  else {
+    document.getElementById('lock-error').style.display='block';
+    document.getElementById('lock-input').value='';
+    document.getElementById('lock-input').focus();
+  }
+}
+
+function enterAdmin(){
+  document.getElementById('lock-overlay').classList.remove('open');
+
+  // 顯示角色有權限的 tab
+  const allowed = ROLE_TABS[currentRole]||[];
+  ['eq','opd','log','pwd'].forEach(t=>{
+    const btn = document.getElementById('atab-'+t);
+    if(btn) btn.style.display = allowed.includes(t) ? '' : 'none';
+  });
+
+  // 進入第一個允許的 tab
+  const firstTab = allowed[0];
+  const firstBtn = document.getElementById('atab-'+firstTab);
+  if(firstBtn){
+    document.querySelectorAll('#page-admin .stats-tab').forEach(b=>b.classList.remove('active'));
+    firstBtn.classList.add('active');
+    ['eq','opd','log','pwd'].forEach(t=>{
+      const el=document.getElementById('admin-'+t);
+      if(el) el.style.display = t===firstTab?'block':'none';
+    });
+    if(firstTab==='eq')  renderAdminEqList();
+    if(firstTab==='opd') renderOPD();
+    if(firstTab==='log') renderChangelog();
+  }
+
+  // 顯示角色標籤
+  const roleLabel = {mtd:'MTD', opd:'OPD', '14':'14'};
+  const el = document.getElementById('admin-role-label');
+  if(el) el.textContent = `(${roleLabel[currentRole]||currentRole})`;
+
+  if(adminNavTab){ showPage('admin', adminNavTab); adminNavTab=null; }
+  else { showPage('admin', document.querySelector('.nav-tab:last-of-type')); }
+}
+
+function logoutAdmin(){
+  currentRole = null;
+  // 隱藏所有 tab
+  ['eq','opd','log','pwd'].forEach(t=>{
+    const btn = document.getElementById('atab-'+t);
+    if(btn) btn.style.display='none';
+  });
+  // 跳回儀表板
+  const dashTab = document.querySelector('.nav-tab');
+  showPage('dashboard', dashTab);
+}
+
+function closeLock(e){
+  if(!e||e.target===document.getElementById('lock-overlay'))
+    document.getElementById('lock-overlay').classList.remove('open');
+}
+
+function changePassword(role){
+  const input = document.getElementById(`pwd-${role}`);
+  const msg   = document.getElementById(`pwd-${role}-msg`);
+  const val   = input.value.trim();
+  if(!val || val.length < 4){ msg.textContent='密碼至少 4 字元'; msg.style.color='#f87171'; return; }
+  PASSWORDS[role] = val;
+  input.value='';
+  msg.textContent='✓ 密碼已更新'; msg.style.color='#4ade80';
+  setTimeout(()=>msg.textContent='', 3000);
+}
+
+// ── 管理者 Tab 切換 ────────────────────────────────────
+function switchAdminTab(tab, btn){
+  const allowed = ROLE_TABS[currentRole]||[];
+  if(!allowed.includes(tab)) return;
+  document.querySelectorAll('#page-admin .stats-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['eq','opd','log','pwd'].forEach(t=>{
+    const el=document.getElementById('admin-'+t);
+    if(el) el.style.display = t===tab?'block':'none';
+  });
+  if(tab==='log') renderChangelog();
+  if(tab==='eq')  renderAdminEqList();
+  if(tab==='opd') renderOPD();
+}
 
 const LOGS = [
   {date:'2026/06/20',version:'v1.0.0',type:'feature',content:'TESM 正式上線，包含搶修儀表板、即時監控、統計分析、保養計畫四大功能'},
@@ -1230,7 +1595,10 @@ const LOGS = [
   {date:'2026/06/20',version:'v1.0.3',type:'fix',content:'修復狀態歷史點擊後 KPI 卡片跳轉至即時監控'},
   {date:'2026/06/20',version:'v1.0.4',type:'feature',content:'統計分析新增雙 Tab：即時統計 + 歷史分析（串接 Google Sheets）'},
   {date:'2026/06/24',version:'v1.1.0',type:'feature',content:'新增 Firebase Realtime Database 即時同步，狀態更新延遲降至 2-3 秒'},
-  {date:'2026/06/24',version:'v1.1.1',type:'improve',content:'車機清單更新為完整清單，新增管理者頁面（車機管理 + 更新日誌）'},
+  {date:'2026/06/24',version:'v1.1.1',type:'improve',content:'車機清單更新為完整清單，新增管理者頁面（MTD 車機管理 + 更新日誌）'},
+  {date:'2026/06/24',version:'v1.2.0',type:'feature',content:'管理者新增自訂車機類型功能，含圖示編輯器（拖移、縮放、旋轉、挖空）'},
+  {date:'2026/06/24',version:'v1.2.1',type:'feature',content:'OPD 配對功能上線：TR + CH 可配對顯示組合圖示，統計分析各自獨立，點擊可分別更新狀態'},
+  {date:'2026/06/24',version:'v1.2.2',type:'improve',content:'管理者三角色分權（MTD/OPD/14），各自密碼，14 可修改所有密碼'},
 ];
 
 const TYPE_META={
@@ -1240,46 +1608,119 @@ const TYPE_META={
   security:{label:'🔒 安全',color:'#c084fc',bg:'#2e1065'},
 };
 
-function openAdminLock(tab){
-  adminNavTab = tab;
-  if(adminUnlocked){ showPage('admin', tab); renderAdminEqList(); renderChangelog(); return; }
-  document.getElementById('lock-overlay').classList.add('open');
-  document.getElementById('lock-input').value='';
-  document.getElementById('lock-error').style.display='none';
-  setTimeout(()=>document.getElementById('lock-input').focus(),100);
-}
+// ── OPD 配對管理 ───────────────────────────────────────
+function renderOPD(){
+  // 填充 TR 下拉
+  const trSel = document.getElementById('pair-tr-select');
+  const chSel = document.getElementById('pair-ch-select');
+  if(!trSel||!chSel) return;
 
-function checkPassword(){
-  const val = document.getElementById('lock-input').value;
-  if(val === ADMIN_PASSWORD){
-    adminUnlocked = true;
-    document.getElementById('lock-overlay').classList.remove('open');
-    if(adminNavTab){ showPage('admin', adminNavTab); adminNavTab=null; }
-    renderAdminEqList();
-    renderChangelog();
-  } else {
-    document.getElementById('lock-error').style.display='block';
-    document.getElementById('lock-input').value='';
-    document.getElementById('lock-input').focus();
+  const pairedTRs = new Set(EQUIPMENT_PAIRS.map(p=>p.tr));
+  const pairedCHs = new Set(EQUIPMENT_PAIRS.map(p=>p.ch));
+
+  const trList = EQUIPMENT.filter(e=>e.type==='TR'&&!pairedTRs.has(e.id));
+  const chList = EQUIPMENT.filter(e=>e.type==='CH'&&!pairedCHs.has(e.id));
+
+  trSel.innerHTML = trList.map(e=>`<option value="${e.id}">${e.id}</option>`).join('') || '<option value="">（無可用 TR）</option>';
+  chSel.innerHTML = chList.map(e=>`<option value="${e.id}">${e.id}</option>`).join('') || '<option value="">（無可用 CH）</option>';
+
+  // 配對清單
+  const list = document.getElementById('pair-list');
+  if(!list) return;
+  if(EQUIPMENT_PAIRS.length===0){
+    list.innerHTML='<div style="color:#4b5563;font-size:13px;text-align:center;padding:12px">尚無配對</div>';
+    return;
   }
+  list.innerHTML = EQUIPMENT_PAIRS.map((p,i)=>{
+    const trEq = EQUIPMENT.find(e=>e.id===p.tr);
+    const chEq = EQUIPMENT.find(e=>e.id===p.ch);
+    const trStatus = trEq?trEq.status:'Unknown';
+    const chStatus = chEq?chEq.status:'Unknown';
+    const trCfg = STATUS_CFG[trStatus]||STATUS_CFG['Out Of Service'];
+    const chCfg = STATUS_CFG[chStatus]||STATUS_CFG['Out Of Service'];
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #21262d22">
+      <div style="flex:1;display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:600;color:#e2e8f0">${p.tr}</span>
+        <span class="status-pill ${trCfg.pill}" style="font-size:10px">${trStatus.replace(' Maintenance','')}</span>
+      </div>
+      <div style="color:#4b5563">⟷</div>
+      <div style="flex:1;display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:600;color:#e2e8f0">${p.ch}</span>
+        <span class="status-pill ${chCfg.pill}" style="font-size:10px">${chStatus.replace(' Maintenance','')}</span>
+      </div>
+      <button onclick="removePair(${i})" style="padding:4px 10px;background:#21262d;border:1px solid #374151;border-radius:6px;color:#94a3b8;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap">解除</button>
+    </div>`;
+  }).join('');
 }
 
-function closeLock(e){
-  if(!e||e.target===document.getElementById('lock-overlay'))
-    document.getElementById('lock-overlay').classList.remove('open');
+function addPair(){
+  const tr = document.getElementById('pair-tr-select').value;
+  const ch = document.getElementById('pair-ch-select').value;
+  const msg = document.getElementById('pair-msg');
+  if(!tr||!ch||tr===ch){ msg.textContent='請選擇有效的 TR 和 CH'; msg.style.color='#f87171'; return; }
+  if(EQUIPMENT_PAIRS.find(p=>p.tr===tr||p.ch===ch)){ msg.textContent='已有配對，請先解除'; msg.style.color='#fb923c'; return; }
+  EQUIPMENT_PAIRS.push({tr, ch});
+  msg.textContent=`✓ ${tr} / ${ch} 已配對`; msg.style.color='#4ade80';
+  setTimeout(()=>msg.textContent='',3000);
+  renderOPD();
+  buildMonitor();
 }
 
-// ── 管理者 Tab 切換 ────────────────────────────────────
-function switchAdminTab(tab, btn){
-  document.querySelectorAll('#page-admin .stats-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('admin-eq').style.display  = tab==='eq'  ? 'block':'none';
-  document.getElementById('admin-log').style.display = tab==='log' ? 'block':'none';
-  if(tab==='log') renderChangelog();
-  if(tab==='eq')  renderAdminEqList();
+function removePair(idx){
+  EQUIPMENT_PAIRS.splice(idx,1);
+  renderOPD();
+  buildMonitor();
+  renderEq();
 }
 
-// ── 車機管理 ───────────────────────────────────────────
+// 配對 Modal
+let currentPairTR='', currentPairCH='';
+
+function openPairModal(trId, chId){
+  currentPairTR=trId; currentPairCH=chId;
+  const trEq=EQUIPMENT.find(e=>e.id===trId);
+  const chEq=EQUIPMENT.find(e=>e.id===chId);
+  document.getElementById('pair-modal-title').textContent=`${trId} / ${chId}`;
+
+  const infoHtml=(eq)=>{
+    if(!eq) return '<div style="color:#4b5563">找不到設備</div>';
+    const cfg=STATUS_CFG[eq.status]||STATUS_CFG['Out Of Service'];
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="font-size:15px;font-weight:600;color:#e2e8f0">${eq.id}</div>
+      <span class="status-pill ${cfg.pill}">${eq.status}</span>
+    </div>`;
+  };
+  document.getElementById('pair-tr-info').innerHTML=infoHtml(trEq);
+  document.getElementById('pair-ch-info').innerHTML=infoHtml(chEq);
+  document.getElementById('pair-modal-overlay').classList.add('open');
+}
+
+function closePairModal(e){
+  if(!e||e.target===document.getElementById('pair-modal-overlay'))
+    document.getElementById('pair-modal-overlay').classList.remove('open');
+}
+
+function updatePairedStatus(role, newStatus){
+  const id = role==='tr' ? currentPairTR : currentPairCH;
+  const eq = EQUIPMENT.find(e=>e.id===id);
+  if(!eq) return;
+  const crew = document.getElementById('pair-crew').value.trim()||'網頁操作';
+  const note = document.getElementById('pair-note').value.trim();
+  eq.status = newStatus;
+
+  // 寫 Firebase
+  const key = id.replace(/[\/\.\#\$\[\]]/g,'_');
+  const now = new Date().toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
+  fetch(`${FIREBASE_DB_URL}/equipment/${key}.json`,{
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({machine_id:id, machine_type:eq.type, status:newStatus, crew, note, last_updated:now})
+  });
+  fetch(`${GAS_URL}?${new URLSearchParams({action:'write',machine_kind:eq.type,number:id.replace(eq.type+'-',''),status:newStatus,process:note||'網頁更新',crew})}`,{method:'GET',mode:'no-cors'});
+
+  openPairModal(currentPairTR, currentPairCH);
+  buildMonitor();
+  buildDashboard();
+}
 function renderAdminEqList(){
   const search = (document.getElementById('admin-eq-search')?.value||'').toLowerCase();
   const typeFilter = document.getElementById('admin-eq-type-filter')?.value||'all';
@@ -1505,7 +1946,7 @@ function toggleHistoryDetail(i){
 }
 
 function closeModal(e){if(!e||e.target===document.getElementById('modal-overlay'))document.getElementById('modal-overlay').classList.remove('open');}
-function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');if(tab)tab.classList.add('active');if(id==='admin'){renderAdminEqList();renderChangelog();}if(id==='stats')renderLiveStats();}
+function showPage(id,tab){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');if(tab)tab.classList.add('active');if(id==='stats')renderLiveStats();}
 
 const MAINT_DATA=[
   {id:'CH-069',title:'CH-069 — 煞車系統更換',desc:'前後煞車片更換、煞車油更換',meta:'申請人：alfredo.bony　2026/06/16 08:00　預計時長：6 hrs',applicant:'alfredo.bony',date:'2026/06/16 08:00',duration:'6 hrs',approvals:[{role:'Leader',status:'done',by:'r.rodriguez',time:'2026/06/16 09:10',comment:'確認需要更換'},{role:'Dep. Head',status:'done',by:'a.hudson',time:'2026/06/16 11:30',comment:'批准'},{role:'Op. Head',status:'done',by:'c.escorcia',time:'2026/06/16 14:00',comment:'同意執行'}]},
