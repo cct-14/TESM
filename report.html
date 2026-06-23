@@ -186,6 +186,7 @@ textarea.big-input{resize:none;line-height:1.5;font-size:17px}
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxliEkHrCaCXAiHza1N0r4Ji80we61tDGbF_kg3GGjAkt-e93zznlFYGrj2lwHcRK5b/exec';
+const FIREBASE_URL = 'https://tesm-c9396-default-rtdb.firebaseio.com';
 const KINDS = ['TR','RTG','CH','GC','FL','SL','ESL','SP','RS','PPG','ARMGC'];
 const TOTAL_STEPS = 6;
 
@@ -375,10 +376,26 @@ async function submitReport(){
     crew: crew
   });
 
-  // no-cors 模式：送出即可，不讀回應（GAS 302 redirect 導致 opaque response）
+  // 1. 直接寫 Firebase（即時，< 1 秒）
+  const key = (selectedKind + '-' + numberInput).replace(/[\/\.\#\$\[\]]/g, '_');
+  const now = new Date().toLocaleString('zh-TW', {timeZone:'Asia/Taipei'});
+  fetch(`${FIREBASE_URL}/equipment/${key}.json`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      machine_id:   selectedKind + '-' + numberInput,
+      machine_type: selectedKind,
+      status:       selectedStatus,
+      crew:         crew,
+      note:         process,
+      last_updated: now
+    })
+  });
+
+  // 2. GAS 在背景寫試算表（不等回應）
   fetch(`${SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
 
-  // 不等回應，直接顯示成功
+  // 3. 立刻顯示成功
   document.getElementById('steps-container').style.display='none';
   document.querySelector('.bottom-bar').style.display='none';
   document.querySelector('.progress-bar').style.display='none';
