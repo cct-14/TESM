@@ -192,7 +192,15 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
 .reject-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#21262d;color:#6b7280;margin-left:6px}
 
 /* APPROVAL MODAL */
-.ap-step-indicator{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:80px}
+.shape-btn{padding:5px 10px;background:#21262d;border:1px solid #30363d;border-radius:6px;font-size:12px;color:#e2e8f0;cursor:pointer;transition:all .15s}
+.shape-btn:hover{background:#30363d;border-color:#3b82f6;color:#60a5fa}
+.shape-item{display:flex;align-items:center;gap:8px;padding:5px 8px;background:#21262d;border:1px solid #30363d;border-radius:6px;font-size:12px;color:#e2e8f0;cursor:pointer}
+.shape-item.selected{border-color:#3b82f6;background:#0c1a3a}
+.shape-item:hover{border-color:#374151}
+.prop-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.prop-label{font-size:11px;color:#6b7280;min-width:50px}
+.prop-input{background:#21262d;border:1px solid #30363d;border-radius:4px;padding:4px 6px;font-size:12px;color:#e2e8f0;outline:none;width:60px}
+.prop-input:focus{border-color:#3b82f6}
 .ap-ind-circle{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;border:2px solid #21262d;color:#6b7280;background:#0d1117;transition:all .2s}
 .ap-ind-circle.active{border-color:#3b82f6;color:#60a5fa;background:#0c1a3a}
 .ap-ind-circle.done{border-color:#166534;color:#4ade80;background:#052e16}
@@ -276,11 +284,16 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
         <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
           <div>
             <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">類型</div>
-            <select id="add-eq-type" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none">
+            <select id="add-eq-type" onchange="toggleCustomType(this)" style="background:#21262d;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none">
               <option>ARMGC</option><option>CH</option><option>ESL</option><option>FL</option>
               <option>GC</option><option>PPG</option><option>RS</option><option>RTG</option>
               <option>SL</option><option>SP</option><option>TR</option>
+              <option value="__custom__">＋ 自訂類型...</option>
             </select>
+          </div>
+          <div id="custom-type-wrap" style="display:none">
+            <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">自訂類型代號</div>
+            <input id="add-eq-custom-type" placeholder="例如 AGV" style="background:#21262d;border:1px solid #3b82f6;border-radius:6px;padding:7px 10px;font-size:13px;color:#e2e8f0;outline:none;width:120px"/>
           </div>
           <div>
             <div style="font-size:11px;color:#6b7280;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">編號</div>
@@ -342,6 +355,78 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
       <div id="changelog-list"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- 圖示編輯器 Modal -->
+<div class="modal-overlay" id="icon-editor-overlay" onclick="closeIconEditor(event)">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-eq-name">🎨 圖示編輯器</div>
+        <div class="modal-eq-type" id="icon-editor-type-label">自訂類型圖示</div>
+      </div>
+      <button class="modal-close" onclick="closeIconEditor()">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 220px;gap:0">
+      <!-- 畫布區 -->
+      <div style="padding:16px;border-right:1px solid #21262d">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">畫布（48×48）</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button onclick="addShape('rect')"    class="shape-btn">▭ 矩形</button>
+          <button onclick="addShape('circle')"  class="shape-btn">○ 圓形</button>
+          <button onclick="addShape('triangle')" class="shape-btn">△ 三角</button>
+          <button onclick="addShape('line')"    class="shape-btn">— 直線</button>
+          <button onclick="addShape('bolt')"    class="shape-btn">⚡ 閃電</button>
+        </div>
+        <!-- SVG 畫布 -->
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div>
+            <svg id="icon-canvas" viewBox="0 0 48 48" width="240" height="240"
+              style="background:#1c2128;border:1px solid #30363d;border-radius:8px;cursor:crosshair"
+              onclick="canvasClick(event)">
+            </svg>
+            <div style="font-size:11px;color:#4b5563;margin-top:4px;text-align:center">點擊選取元件</div>
+          </div>
+          <!-- 預覽 -->
+          <div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">預覽</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;width:80px">
+                <svg id="icon-preview-av" viewBox="0 0 48 48" width="44" height="44"></svg>
+                <div style="font-size:10px;color:#4ade80">Available</div>
+              </div>
+              <div style="background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;width:80px">
+                <svg id="icon-preview-em" viewBox="0 0 48 48" width="44" height="44"></svg>
+                <div style="font-size:10px;color:#fb923c">Emergency</div>
+              </div>
+              <div style="background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;width:80px">
+                <svg id="icon-preview-oos" viewBox="0 0 48 48" width="44" height="44"></svg>
+                <div style="font-size:10px;color:#475569">Out Of Svc</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 屬性面板 -->
+      <div style="padding:16px">
+        <div style="font-size:11px;color:#6b7280;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">元件屬性</div>
+        <div id="shape-props" style="color:#4b5563;font-size:12px">點選畫布上的元件來編輯</div>
+
+        <!-- 元件列表 -->
+        <div style="margin-top:16px">
+          <div style="font-size:11px;color:#6b7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">元件列表</div>
+          <div id="shape-list" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部按鈕 -->
+    <div style="padding:14px 24px;border-top:1px solid #21262d;display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="clearCanvas()" style="padding:7px 14px;background:#21262d;color:#6b7280;border:none;border-radius:6px;font-size:13px;cursor:pointer">清除全部</button>
+      <button onclick="saveIcon()" style="padding:7px 18px;background:#3b82f6;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">✓ 儲存圖示</button>
+    </div>
   </div>
 </div>
 
@@ -741,6 +826,9 @@ function icon(type,color){
       <circle cx="38" cy="42" r="3.5" fill="${c}" opacity=".4" stroke="${c}" stroke-width="1.2"/>
     </svg>`,
   };
+  if(CUSTOM_ICONS[type]&&CUSTOM_ICONS[type].length>0){
+    return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${CUSTOM_ICONS[type].map(s=>shapeToSVG(s,c)).join('')}</svg>`;
+  }
   return icons[type]||icons['TR'];
 }
 
@@ -894,7 +982,19 @@ function buildMonitor(){
   renderEq();
 }
 
+function sortEquipment(){
+  EQUIPMENT.sort((a,b)=>{
+    if(a.type!==b.type) return a.type.localeCompare(b.type);
+    // 提取編號中的數字部分排序
+    const numA = parseInt(a.id.replace(/[^0-9]/g,''))||0;
+    const numB = parseInt(b.id.replace(/[^0-9]/g,''))||0;
+    if(numA!==numB) return numA-numB;
+    return a.id.localeCompare(b.id);
+  });
+}
+
 function renderEq(){
+  sortEquipment();
   const search=document.getElementById('eq-search').value.toLowerCase();
   const filtered=EQUIPMENT.filter(e=>{
     return (activeStatus==='All'||e.status===activeStatus)&&(activeType==='All'||e.type===activeType)&&(!search||e.id.toLowerCase().includes(search)||e.type.toLowerCase().includes(search));
@@ -1194,10 +1294,15 @@ function renderAdminEqList(){
   const grouped = {};
   filtered.forEach(e=>{ if(!grouped[e.type]) grouped[e.type]=[]; grouped[e.type].push(e); });
 
+  const knownTypes = ['ARMGC','CH','ESL','FL','GC','PPG','RS','RTG','SL','SP','TR'];
   list.innerHTML = Object.keys(grouped).sort().map(type=>{
     const eqs = grouped[type];
+    const isCustom = !knownTypes.includes(type);
     return `<div style="border-bottom:1px solid #21262d">
-      <div style="padding:8px 16px;background:#0d1117;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em">${type} (${eqs.length})</div>
+      <div style="padding:8px 16px;background:#0d1117;font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px">
+        <span>${type} (${eqs.length})</span>
+        ${isCustom?`<button onclick="openIconEditor('${type}')" style="padding:2px 8px;background:#21262d;border:1px solid #30363d;border-radius:4px;font-size:11px;color:#60a5fa;cursor:pointer">🎨 編輯圖示</button>`:''}
+      </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px">
         ${eqs.map(e=>`
           <div style="display:inline-flex;align-items:center;gap:6px;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:4px 8px 4px 10px;font-size:12px;color:#e2e8f0">
@@ -1209,11 +1314,26 @@ function renderAdminEqList(){
   }).join('') || '<div style="padding:20px;color:#6b7280;font-size:13px;text-align:center">查無資料</div>';
 }
 
+// 取得目前所有類型（含自訂）
+function getEquipmentTypes(){
+  return [...new Set(EQUIPMENT.map(e=>e.type))].sort();
+}
+
+function toggleCustomType(sel){
+  const wrap = document.getElementById('custom-type-wrap');
+  wrap.style.display = sel.value==='__custom__' ? 'block' : 'none';
+  if(sel.value==='__custom__') document.getElementById('add-eq-custom-type').focus();
+}
+
 function addEquipment(){
-  const type = document.getElementById('add-eq-type').value;
+  const typeSelect = document.getElementById('add-eq-type').value;
+  const type = typeSelect==='__custom__'
+    ? document.getElementById('add-eq-custom-type').value.trim().toUpperCase()
+    : typeSelect;
   const number = document.getElementById('add-eq-number').value.trim();
   const msg = document.getElementById('add-eq-msg');
 
+  if(!type){ msg.textContent='請輸入類型'; msg.style.color='#f87171'; return; }
   if(!number){ msg.textContent='請輸入編號'; msg.style.color='#f87171'; return; }
 
   const id = type + '-' + number;
@@ -1222,13 +1342,40 @@ function addEquipment(){
   }
 
   EQUIPMENT.push({id, type, status:'Available'});
+
+  // 如果是新類型，同步更新篩選下拉
+  syncTypeSelectors();
+
   document.getElementById('add-eq-number').value='';
+  if(typeSelect==='__custom__') document.getElementById('add-eq-custom-type').value='';
   msg.textContent=`✓ 已新增 ${id}`; msg.style.color='#4ade80';
   setTimeout(()=>msg.textContent='', 3000);
 
   renderAdminEqList();
   buildMonitor();
   buildDashboard();
+}
+
+// 同步所有類型下拉選單（新增自訂類型後更新）
+function syncTypeSelectors(){
+  const types = getEquipmentTypes();
+  const baseOptions = types.map(t=>`<option value="${t}">${t}</option>`).join('');
+
+  // 管理者新增下拉
+  const addSel = document.getElementById('add-eq-type');
+  if(addSel){
+    const cur = addSel.value;
+    addSel.innerHTML = baseOptions + '<option value="__custom__">＋ 自訂類型...</option>';
+    if([...addSel.options].find(o=>o.value===cur)) addSel.value=cur;
+  }
+
+  // 管理者篩選下拉
+  const filterSel = document.getElementById('admin-eq-type-filter');
+  if(filterSel){
+    const cur2 = filterSel.value;
+    filterSel.innerHTML = '<option value="all">所有類型</option>' + baseOptions;
+    if([...filterSel.options].find(o=>o.value===cur2)) filterSel.value=cur2;
+  }
 }
 
 function deleteEquipment(id){
@@ -1628,6 +1775,301 @@ function closeApproval(e){
 }
 
 renderMaintList('all');
+
+// ── 圖示編輯器 ────────────────────────────────────────
+const CUSTOM_ICONS = {};
+let iconShapes = [];
+let selectedShapeId = null;
+let iconEditorType = '';
+
+function openIconEditor(type){
+  iconEditorType = type;
+  document.getElementById('icon-editor-type-label').textContent = `類型：${type}`;
+  iconShapes = CUSTOM_ICONS[type] ? JSON.parse(JSON.stringify(CUSTOM_ICONS[type])) : [];
+  selectedShapeId = null;
+  renderCanvas();
+  renderShapeList();
+  updateShapeProps();
+  document.getElementById('icon-editor-overlay').classList.add('open');
+  // 綁定拖移事件
+  setTimeout(initCanvasDrag, 100);
+}
+
+let dragState = null;
+
+function initCanvasDrag(){
+  const svg = document.getElementById('icon-canvas');
+  if(!svg || svg._dragBound) return;
+  svg._dragBound = true;
+
+  function svgCoords(e){
+    const rect = svg.getBoundingClientRect();
+    const scale = 48 / rect.width;
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: (touch.clientX - rect.left)*scale, y: (touch.clientY - rect.top)*scale };
+  }
+
+  function onDown(e){
+    const {x,y} = svgCoords(e);
+    for(let i=iconShapes.length-1;i>=0;i--){
+      const s=iconShapes[i];
+      const cx=s.cx??24, cy=s.cy??24;
+      const sz=Math.max(s.w||20,s.h||20,s.r||10,s.size||14,s.len||24)*(s.scale||1);
+      if(Math.hypot(x-cx,y-cy)<=sz+6){
+        selectShape(s.id);
+        dragState={id:s.id, startX:x, startY:y, origShape:JSON.parse(JSON.stringify(s))};
+        e.preventDefault();
+        return;
+      }
+    }
+    selectedShapeId=null; updateShapeProps(); renderCanvas(); renderShapeList();
+  }
+
+  function onMove(e){
+    if(!dragState) return;
+    e.preventDefault();
+    const {x,y}=svgCoords(e);
+    const dx=x-dragState.startX, dy=y-dragState.startY;
+    const s=iconShapes.find(x=>x.id===dragState.id);
+    const o=dragState.origShape;
+    if(!s) return;
+    s.cx = Math.round((o.cx??24)+dx);
+    s.cy = Math.round((o.cy??24)+dy);
+    renderCanvas();
+    updateShapeProps();
+  }
+
+  function onUp(){
+    dragState=null;
+  }
+
+  svg.addEventListener('mousedown',  onDown);
+  svg.addEventListener('mousemove',  onMove);
+  svg.addEventListener('mouseup',    onUp);
+  svg.addEventListener('touchstart', onDown, {passive:false});
+  svg.addEventListener('touchmove',  onMove, {passive:false});
+  svg.addEventListener('touchend',   onUp);
+}
+
+function closeIconEditor(e){
+  if(!e||e.target===document.getElementById('icon-editor-overlay'))
+    document.getElementById('icon-editor-overlay').classList.remove('open');
+}
+
+function shapeDefaults(type){
+  // 統一模型：cx/cy = 中心點，scale = 縮放(預設1)，rotate = 旋轉角度(度)
+  const base = {id: Date.now(), type, opacity: 0.8, strokeWidth: 1.5, cx:24, cy:24, scale:1, rotate:0};
+  switch(type){
+    case 'rect':     return {...base, w:24, h:14};
+    case 'circle':   return {...base, r:10};
+    case 'triangle': return {...base, size:16};
+    case 'line':     return {...base, len:24};
+    case 'diag':     return {...base, len:24};
+    case 'bolt':     return {...base, size:14};
+  }
+}
+
+function shapeToSVG(s, color){
+  const c   = color||'currentColor';
+  const op  = s.opacity||0.8;
+  const sw  = s.strokeWidth||1.5;
+  const cx  = s.cx??24, cy = s.cy??24;
+  const sc  = s.scale||1;
+  const rot = s.rotate||0;
+  const tr  = `transform="translate(${cx},${cy}) rotate(${rot}) scale(${sc}) translate(-${cx},-${cy})"`;
+  const fillVal = s.hollow ? 'none' : c;
+  const base= `fill="${fillVal}" opacity="${op}" stroke="${c}" stroke-width="${sw}"`;
+
+  switch(s.type){
+    case 'rect':{
+      const w=s.w||24, h=s.h||14;
+      return `<rect x="${cx-w/2}" y="${cy-h/2}" width="${w}" height="${h}" rx="1.5" ${base} ${tr}/>`;
+    }
+    case 'circle':
+      return `<circle cx="${cx}" cy="${cy}" r="${(s.r||10)*sc}" fill="${fillVal}" opacity="${op}" stroke="${c}" stroke-width="${sw}"/>`;
+    case 'triangle':{
+      const sz=s.size||16;
+      const pts=`${cx},${cy-sz} ${cx-sz*0.87},${cy+sz*0.5} ${cx+sz*0.87},${cy+sz*0.5}`;
+      return `<polygon points="${pts}" ${base} stroke-linejoin="round" ${tr}/>`;
+    }
+    case 'line':
+    case 'diag':{
+      const len=(s.len||24)*sc/2;
+      return `<line x1="${cx-len}" y1="${cy}" x2="${cx+len}" y2="${cy}" stroke="${c}" stroke-width="${sw}" opacity="${op}" stroke-linecap="round" ${tr}/>`;
+    }
+    case 'bolt':{
+      const sz=(s.size||14)*sc;
+      const pts=`${cx+4},${cy-sz} ${cx-6},${cy} ${cx},${cy} ${cx-8},${cy+sz} ${cx+8},${cy-2} ${cx+1},${cy-2}`;
+      return `<polygon points="${pts}" fill="${fillVal}" stroke="${c}" stroke-width="0.8" opacity="${op}" stroke-linejoin="round" ${tr}/>`;
+    }
+  }
+  return '';
+}
+
+function renderCanvas(){
+  const svg = document.getElementById('icon-canvas');
+  if(!svg) return;
+  svg.innerHTML = iconShapes.map(s=>{
+    const sel = s.id===selectedShapeId;
+    return (sel?`<rect x="0" y="0" width="48" height="48" fill="none" stroke="#3b82f6" stroke-width="0.5" opacity="0.3"/>`:'') + shapeToSVG(s,'#60a5fa');
+  }).join('');
+  const previewInner = iconShapes.map(s=>shapeToSVG(s,'__C__')).join('');
+  const pav=document.getElementById('icon-preview-av'); if(pav) pav.innerHTML=previewInner.replace(/__C__/g,'#4ade80');
+  const pem=document.getElementById('icon-preview-em'); if(pem) pem.innerHTML=previewInner.replace(/__C__/g,'#fb923c');
+  const pos=document.getElementById('icon-preview-oos'); if(pos) pos.innerHTML=previewInner.replace(/__C__/g,'#475569');
+}
+
+function renderShapeList(){
+  const list = document.getElementById('shape-list');
+  if(!list) return;
+  const typeLabel = {rect:'矩形',circle:'圓形',triangle:'三角',line:'直線',diag:'斜線',bolt:'閃電'};
+  list.innerHTML = iconShapes.map((s,i)=>`
+    <div class="shape-item${s.id===selectedShapeId?' selected':''}" onclick="selectShape(${s.id})">
+      <span style="flex:1">${i+1}. ${typeLabel[s.type]||s.type}</span>
+      <button onclick="event.stopPropagation();deleteShape(${s.id})" style="background:transparent;border:none;color:#6b7280;cursor:pointer;font-size:14px;padding:0 2px">✕</button>
+    </div>`).join('') || '<div style="color:#4b5563;font-size:12px">尚無元件</div>';
+}
+
+function addShape(type){
+  const s = shapeDefaults(type);
+  iconShapes.push(s);
+  selectedShapeId = s.id;
+  renderCanvas();
+  renderShapeList();
+  updateShapeProps();
+}
+
+function deleteShape(id){
+  iconShapes = iconShapes.filter(s=>s.id!==id);
+  if(selectedShapeId===id) selectedShapeId=null;
+  renderCanvas();
+  renderShapeList();
+  updateShapeProps();
+}
+
+function selectShape(id){
+  selectedShapeId = id;
+  renderCanvas();
+  renderShapeList();
+  updateShapeProps();
+}
+
+function canvasClick(e){
+  // 拖移時不處理 click
+  if(dragState) return;
+  const svg = document.getElementById('icon-canvas');
+  const rect = svg.getBoundingClientRect();
+  const scale = 48/rect.width;
+  const x = (e.clientX - rect.left)*scale;
+  const y = (e.clientY - rect.top)*scale;
+  let hit = null;
+  for(let i=iconShapes.length-1;i>=0;i--){
+    const s=iconShapes[i];
+    const cx=s.cx??24, cy=s.cy??24;
+    const sz=Math.max(s.w||20,s.h||20,s.r||10,s.size||14,s.len||24)*(s.scale||1);
+    if(Math.hypot(x-cx,y-cy)<=sz+4){ hit=s; break; }
+  }
+  if(hit){ selectShape(hit.id); } else { selectedShapeId=null; updateShapeProps(); renderCanvas(); renderShapeList(); }
+}
+
+function updateShapeProps(){
+  const panel = document.getElementById('shape-props');
+  if(!panel) return;
+  const s = iconShapes.find(x=>x.id===selectedShapeId);
+  if(!s){ panel.innerHTML='<div style="color:#4b5563;font-size:12px">點選畫布上的元件來編輯</div>'; return; }
+
+  const inp=(label,field,val,step,min,max)=>{
+    const s2=iconShapes.find(x=>x.id===selectedShapeId);
+    const sid=s2?s2.id:0;
+    const st=step||1;
+    const minAttr=min!==undefined?`min="${min}"`:'';
+    const maxAttr=max!==undefined?`max="${max}"`:'';
+    return `<div class="prop-row">
+      <div class="prop-label">${label}</div>
+      <input class="prop-input" type="number" step="${st}" ${minAttr} ${maxAttr} value="${val}" oninput="updateProp(${sid},'${field}',+this.value)"/>
+      <button onclick="stepProp(${sid},'${field}',${-st},${min!==undefined?min:'undefined'},${max!==undefined?max:'undefined'})" style="background:#21262d;border:1px solid #30363d;border-radius:4px;color:#e2e8f0;cursor:pointer;padding:2px 6px;font-size:11px;margin-left:4px">◀</button>
+      <button onclick="stepProp(${sid},'${field}',${st},${min!==undefined?min:'undefined'},${max!==undefined?max:'undefined'})"  style="background:#21262d;border:1px solid #30363d;border-radius:4px;color:#e2e8f0;cursor:pointer;padding:2px 6px;font-size:11px">▶</button>
+    </div>`;
+  };
+
+  const typeLabel={rect:'矩形',circle:'圓形',triangle:'三角',line:'直線',diag:'斜線',bolt:'閃電'};
+  let html=`<div style="font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:10px">${typeLabel[s.type]||s.type}</div>`;
+
+  // 通用：位置
+  html += inp('X',  'cx', Math.round(s.cx??24));
+  html += inp('Y',  'cy', Math.round(s.cy??24));
+
+  // 形狀特有
+  if(s.type==='rect')     { html+=inp('寬','w',s.w||24)+inp('高','h',s.h||14); }
+  if(s.type==='circle')   { html+=inp('半徑','r',s.r||10,1,1); }
+  if(s.type==='triangle') { html+=inp('大小','size',s.size||16,1,2); }
+  if(s.type==='line'||s.type==='diag') { html+=inp('長度','len',s.len||24,1,2); }
+  if(s.type==='bolt')     { html+=inp('大小','size',s.size||14,1,2); }
+
+  // 通用：縮放、旋轉、透明度、線寬
+  html += inp('縮放','scale',(s.scale||1).toFixed(1),0.1,0.1,5);
+  html += `<div class="prop-row"><div class="prop-label">旋轉</div>
+    <input class="prop-input" id="rotate-input-${s.id}" type="number" step="5" min="0" max="360" value="${s.rotate||0}" oninput="updateProp(${s.id},'rotate',+this.value)"/>
+    <button onclick="rotateBy(${s.id},-15)" style="background:#21262d;border:1px solid #30363d;border-radius:4px;color:#e2e8f0;cursor:pointer;padding:2px 6px;font-size:11px;margin-left:4px">◀</button>
+    <button onclick="rotateBy(${s.id},15)"  style="background:#21262d;border:1px solid #30363d;border-radius:4px;color:#e2e8f0;cursor:pointer;padding:2px 6px;font-size:11px">▶</button>
+  </div>`;
+  html += inp('透明度','opacity',(s.opacity||0.8).toFixed(1),0.1,0.1,1);
+  html += inp('線寬','strokeWidth',(s.strokeWidth||1.5).toFixed(1),0.5,0.5,8);
+  // 挖空開關
+  html += `<div class="prop-row"><div class="prop-label">挖空</div>
+    <button onclick="toggleHollow(${s.id})" style="padding:3px 12px;background:${s.hollow?'#1d4ed8':'#21262d'};border:1px solid ${s.hollow?'#3b82f6':'#30363d'};border-radius:4px;color:${s.hollow?'#60a5fa':'#6b7280'};cursor:pointer;font-size:12px;font-weight:600">
+      ${s.hollow?'✓ 開啟':'關閉'}
+    </button>
+  </div>`;
+
+  panel.innerHTML=html;
+}
+
+function updateProp(id,field,val){
+  const s=iconShapes.find(x=>x.id===id);
+  if(s){ s[field]=val; renderCanvas(); }
+}
+
+function stepProp(id,field,delta,min,max){
+  const s=iconShapes.find(x=>x.id===id);
+  if(!s) return;
+  let v=(s[field]||0)+delta;
+  if(min!==undefined&&min!==null&&!isNaN(min)) v=Math.max(min,v);
+  if(max!==undefined&&max!==null&&!isNaN(max)) v=Math.min(max,v);
+  // 小數精度處理
+  v=Math.round(v*100)/100;
+  s[field]=v;
+  renderCanvas();
+  updateShapeProps();
+}
+
+function rotateBy(id, delta){
+  const s=iconShapes.find(x=>x.id===id);
+  if(!s) return;
+  s.rotate = ((s.rotate||0)+delta+360)%360;
+  renderCanvas();
+  updateShapeProps();
+}
+
+function toggleHollow(id){
+  const s=iconShapes.find(x=>x.id===id);
+  if(!s) return;
+  s.hollow = !s.hollow;
+  renderCanvas();
+  updateShapeProps();
+}
+
+function clearCanvas(){
+  iconShapes=[]; selectedShapeId=null;
+  renderCanvas(); renderShapeList(); updateShapeProps();
+}
+
+function saveIcon(){
+  CUSTOM_ICONS[iconEditorType]=JSON.parse(JSON.stringify(iconShapes));
+  document.getElementById('icon-editor-overlay').classList.remove('open');
+  renderAdminEqList();
+  buildMonitor();
+}
 
 function tick(){
   const now=Date.now();
