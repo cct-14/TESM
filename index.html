@@ -354,6 +354,7 @@ nav{background:#161b22;border-bottom:1px solid #21262d;padding:0 24px;display:fl
         <button class="v-btn on" onclick="setView('grid',this)" title="Grid">⊞</button>
         <button class="v-btn" onclick="setView('list',this)" title="List">☰</button>
       </div>
+      <span id="sheet-sync-time" style="font-size:11px;color:#4b5563;margin-left:auto">⟳ 載入中...</span>
     </div>
     <div class="status-bar" id="status-bar"></div>
     <div class="type-bar" id="type-bar"></div>
@@ -917,7 +918,39 @@ function renderLiveStats(){
   document.getElementById('live-oos-count').textContent = (counts['Out Of Service']||0)+(counts['Damaged']||0);
 }
 
-let histSheetUrl = 'https://script.google.com/macros/s/AKfycbxliEkHrCaCXAiHza1N0r4Ji80we61tDGbF_kg3GGjAkt-e93zznlFYGrj2lwHcRK5b/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxliEkHrCaCXAiHza1N0r4Ji80we61tDGbF_kg3GGjAkt-e93zznlFYGrj2lwHcRK5b/exec';
+
+// ── 從試算表載入即時設備狀態 ──────────────────────────
+async function loadEquipmentFromSheet() {
+  try {
+    const res  = await fetch(`${GAS_URL}?action=equipment`);
+    const data = await res.json();
+    if (data.error || !data.equipment || data.equipment.length === 0) return;
+
+    // 用試算表資料更新 EQUIPMENT 陣列的狀態
+    data.equipment.forEach(row => {
+      const eq = EQUIPMENT.find(e => e.id === row.machine_id);
+      if (eq) {
+        eq.status = row.status;
+      } else {
+        // 試算表有但本地沒有的設備，動態加入
+        EQUIPMENT.push({ id: row.machine_id, type: row.machine_type, status: row.status });
+      }
+    });
+
+    buildMonitor();
+    buildDashboard();
+    renderLiveStats();
+
+    // 更新右上角刷新時間
+    const el = document.getElementById('sheet-sync-time');
+    if (el) el.textContent = '⟳ ' + new Date().toLocaleTimeString('en-GB');
+  } catch (err) {
+    console.warn('載入設備狀態失敗：', err.message);
+  }
+}
+
+let histSheetUrl = GAS_URL;
 
 function saveSheetUrl(){
   histSheetUrl = document.getElementById('hist-sheet-url').value.trim();
@@ -928,23 +961,22 @@ function saveSheetUrl(){
 }
 
 async function loadHistoryStats(){
-  const from = document.getElementById('hist-date-from').value;
-  const to = document.getElementById('hist-date-to').value;
-  const type = document.getElementById('hist-type-filter').value;
+  const from  = document.getElementById('hist-date-from').value;
+  const to    = document.getElementById('hist-date-to').value;
+  const type  = document.getElementById('hist-type-filter').value;
   const status = document.getElementById('hist-sheet-status');
-
-  if(!histSheetUrl){
-    status.textContent='⚠ 請先設定 Google Sheets 網址';
-    status.style.color='#fb923c';
-    return;
-  }
 
   status.textContent='載入中...';
   status.style.color='#6b7280';
 
   try {
-    const params = new URLSearchParams({action:'getHistory', from, to, type});
-    const res = await fetch(`${histSheetUrl}?${params}`);
+    const now = new Date();
+    const month = from
+      ? from.replace(/-/g,'').substring(0,6)
+      : `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}`;
+
+    const params = new URLSearchParams({ action:'history', month, from, to, type });
+    const res  = await fetch(`${GAS_URL}?${params}`);
     const data = await res.json();
 
     if(data.error){ status.textContent='❌ '+data.error; status.style.color='#f87171'; return; }
@@ -960,7 +992,7 @@ async function loadHistoryStats(){
     document.getElementById('hist-avg-repair').textContent = avgRepair;
 
     const faultMap = {};
-    rows.forEach(r=>{ if(r.fault) faultMap[r.fault]=(faultMap[r.fault]||0)+1; });
+    rows.forEach(r=>{ if(r.process) faultMap[r.process]=(faultMap[r.process]||0)+1; });
     const topFault = Object.entries(faultMap).sort((a,b)=>b[1]-a[1])[0];
     document.getElementById('hist-top-fault').textContent = topFault?topFault[0]:'-';
     document.getElementById('hist-top-fault-count').textContent = topFault?`共 ${topFault[1]} 次`:'-';
@@ -972,16 +1004,16 @@ async function loadHistoryStats(){
             <th style="padding:8px;text-align:left;color:#6b7280">時間</th>
             <th style="padding:8px;text-align:left;color:#6b7280">設備</th>
             <th style="padding:8px;text-align:left;color:#6b7280">種類</th>
-            <th style="padding:8px;text-align:left;color:#6b7280">故障原因</th>
-            <th style="padding:8px;text-align:left;color:#6b7280">維修時長</th>
+            <th style="padding:8px;text-align:left;color:#6b7280">狀態</th>
+            <th style="padding:8px;text-align:left;color:#6b7280">描述</th>
             <th style="padding:8px;text-align:left;color:#6b7280">人員</th>
           </tr></thead>
           <tbody>${rows.map(r=>`<tr style="border-bottom:1px solid #21262d22">
             <td style="padding:8px;color:#94a3b8">${r.date||''}</td>
             <td style="padding:8px;color:#e2e8f0;font-weight:500">${r.machine_id||''}</td>
-            <td style="padding:8px;color:#6b7280">${r.machine_type||''}</td>
-            <td style="padding:8px;color:#e2e8f0">${r.fault||''}</td>
-            <td style="padding:8px;color:#60a5fa">${r.duration||'-'} hrs</td>
+            <td style="padding:8px;color:#6b7280">${r.machine_kind||''}</td>
+            <td style="padding:8px"><span class="status-pill ${(STATUS_CFG[r.status]||STATUS_CFG['Out Of Service']).pill}">${r.status||''}</span></td>
+            <td style="padding:8px;color:#e2e8f0">${r.process||'-'}</td>
             <td style="padding:8px;color:#6b7280">${r.crew||''}</td>
           </tr>`).join('')}</tbody>
         </table>`;
@@ -1251,15 +1283,15 @@ function updateStatus(newStatus){
   document.getElementById('status-crew').value='';
   document.getElementById('status-note').value='';
 
-  // 送到 Google Sheets（img ping 繞過 CORS）
+  // 送到 Google Sheets（fetch no-cors）
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxliEkHrCaCXAiHza1N0r4Ji80we61tDGbF_kg3GGjAkt-e93zznlFYGrj2lwHcRK5b/exec';
   const machine_kind = eq.type;
-  const number = currentModalId;
+  // currentModalId 格式如 TR-42，去掉 type 前綴只傳數字部分，避免寫成 TR-TR-42
+  const number = currentModalId.startsWith(machine_kind + '-') ? currentModalId.slice(machine_kind.length + 1) : currentModalId;
   const params = new URLSearchParams({
     action:'write', machine_kind, number, status:newStatus, process:note||'網頁更新', crew
   });
-  const img = new Image();
-  img.src = `${SHEET_URL}?${params}`;
+  fetch(`${SHEET_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
 
   // 更新 Modal 標題顯示
   renderModalHistory(currentModalId);
@@ -1444,6 +1476,22 @@ function tick(){
 
 buildDashboard();buildMonitor();tick();setInterval(tick,1000);
 setLang('zh');
+
+// 啟動時從試算表載入設備狀態，之後每 30 秒刷新一次
+loadEquipmentFromSheet();
+setInterval(loadEquipmentFromSheet, 30000);
+
+// 歷史分析頁：預設填入本月日期範圍
+(function(){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  const firstDay = `${y}-${m}-01`;
+  const today    = `${y}-${m}-${d}`;
+  document.getElementById('hist-date-from').value = firstDay;
+  document.getElementById('hist-date-to').value   = today;
+})();
 </script>
 </body>
 </html>

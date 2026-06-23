@@ -366,36 +366,26 @@ async function submitReport(){
   btn.disabled = true;
   btn.textContent = t('sending');
 
-  try {
-    const params = new URLSearchParams({
-      action: 'write',
-      machine_kind: selectedKind,
-      number: numberInput,
-      status: selectedStatus,
-      process: process,
-      crew: crew
-    });
+  const params = new URLSearchParams({
+    action: 'write',
+    machine_kind: selectedKind,
+    number: numberInput,
+    status: selectedStatus,
+    process: process,
+    crew: crew
+  });
 
-    // fetch no-cors：可正確跟隨 GAS 的 302 redirect，不被 CORS 擋住
-    await fetch(`${SCRIPT_URL}?${params}`, {
-      method: 'GET',
-      mode: 'no-cors'
-    });
+  // no-cors 模式：送出即可，不讀回應（GAS 302 redirect 導致 opaque response）
+  fetch(`${SCRIPT_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
 
-    document.getElementById('steps-container').style.display='none';
-    document.querySelector('.bottom-bar').style.display='none';
-    document.querySelector('.progress-bar').style.display='none';
-    document.querySelector('.header').style.display='none';
-    const sw = document.getElementById('success-wrap');
-    sw.style.display='flex';
-    document.getElementById('success-detail').textContent = `${number} — ${selectedStatus}\n${t('reporter')}: ${crew}`;
-
-  } catch(err){
-    btn.disabled = false;
-    btn.textContent = t('submit_btn');
-    btn.style.background = '#16a34a';
-    alert('Error: ' + err.message);
-  }
+  // 不等回應，直接顯示成功
+  document.getElementById('steps-container').style.display='none';
+  document.querySelector('.bottom-bar').style.display='none';
+  document.querySelector('.progress-bar').style.display='none';
+  document.querySelector('.header').style.display='none';
+  const sw = document.getElementById('success-wrap');
+  sw.style.display='flex';
+  document.getElementById('success-detail').textContent = `${number} — ${selectedStatus}\n${t('reporter')}: ${crew}`;
 }
 
 function resetForm(){
