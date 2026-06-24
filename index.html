@@ -1957,6 +1957,47 @@ const MAINT_DATA=[
 
 let selectedNewStatus = null;
 
+function updateStatus(newStatus){
+  if(!currentModalId) return;
+  const crew = document.getElementById('status-crew').value.trim() || '網頁操作';
+  const note = document.getElementById('status-note').value.trim();
+
+  const eq = EQUIPMENT.find(e=>e.id===currentModalId);
+  if(!eq) return;
+  eq.status = newStatus;
+
+  // 立刻加入本地快取（不用等 GAS）
+  if(!EQUIPMENT_HISTORY[currentModalId]) EQUIPMENT_HISTORY[currentModalId]=[];
+  const now = new Date();
+  EQUIPMENT_HISTORY[currentModalId].unshift({
+    status:  newStatus,
+    time:    now.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    dur:     '-',
+    author:  crew,
+    fault:   note || '-',
+    action:  '-',
+    notes:   note || '-'
+  });
+
+  document.getElementById('status-crew').value='';
+  document.getElementById('status-note').value='';
+
+  // Firebase（即時）+ GAS（試算表，背景）
+  const key = currentModalId.replace(/[\/\.\#\$\[\]]/g,'_');
+  const ts  = now.toLocaleString('zh-TW',{timeZone:'Asia/Taipei'});
+  fetch(`${FIREBASE_DB_URL}/equipment/${key}.json`,{
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({machine_id:currentModalId, machine_type:eq.type, status:newStatus, crew, note, last_updated:ts})
+  });
+  const machine_kind = eq.type;
+  const number = currentModalId.startsWith(machine_kind+'-') ? currentModalId.slice(machine_kind.length+1) : currentModalId;
+  fetch(`${GAS_URL}?${new URLSearchParams({action:'write',machine_kind,number,status:newStatus,process:note||'網頁更新',crew})}`,{method:'GET',mode:'no-cors'});
+
+  renderModalHistory(currentModalId);
+  buildMonitor();
+  buildDashboard();
+}
+
 function selectStatus(status, btn){
   selectedNewStatus = status;
   // 所有按鈕恢復半透明
@@ -2000,70 +2041,73 @@ function openModal(id,type,status){
   document.getElementById('modal-type').textContent=`↕ ${type}  ⊙ CCT`;
   document.getElementById('status-crew').value='';
   document.getElementById('status-note').value='';
-  renderModalHistory(id);
   document.getElementById('modal-overlay').classList.add('open');
+  // 先用本地快取渲染，再非同步讀取最新歷史
+  renderModalHistory(id);
+  fetchModalHistory(id, type);
 }
 
-function updateStatus(newStatus){
-  if(!currentModalId) return;
-  const crew = document.getElementById('status-crew').value.trim() || '網頁操作';
-  const note = document.getElementById('status-note').value.trim();
+async function fetchModalHistory(id, type){
+  try {
+    document.getElementById('modal-history-rows').innerHTML=
+      '<div style="color:#4b5563;font-size:12px;padding:12px;text-align:center">載入中...</div>';
 
-  // 找到設備並更新狀態
-  const eq = EQUIPMENT.find(e=>e.id===currentModalId);
-  if(!eq) return;
-  const oldStatus = eq.status;
-  eq.status = newStatus;
+    const now = new Date();
+    const months = [];
+    // 抓最近 3 個月
+    for(let i=0;i<3;i++){
+      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      months.push(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
 
-  // 記錄歷史
-  if(!EQUIPMENT_HISTORY[currentModalId]) EQUIPMENT_HISTORY[currentModalId]=[];
-  const now = new Date();
-  EQUIPMENT_HISTORY[currentModalId].unshift({
-    status: newStatus,
-    time: now.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
-    dur: '-',
-    author: crew,
-    fault: note || '-',
-    action: `由 ${oldStatus} 改為 ${newStatus}`,
-    notes: note || '狀態更新'
-  });
+    let allRows = [];
+    for(const month of months){
+      try {
+        const res  = await fetch(`${GAS_URL}?action=history&month=${month}&type=${type}`);
+        const data = await res.json();
+        if(data.rows) allRows = allRows.concat(data.rows.filter(r=>r.machine_id===id));
+      } catch(e){ /* 某個月份可能沒有資料 */ }
+    }
 
-  // 清空輸入
-  document.getElementById('status-crew').value='';
-  document.getElementById('status-note').value='';
+    // 依時間倒序排列
+    allRows.sort((a,b)=>new Date(b.date)-new Date(a.date));
 
-  // 送到 Google Sheets（fetch no-cors）
-  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxliEkHrCaCXAiHza1N0r4Ji80we61tDGbF_kg3GGjAkt-e93zznlFYGrj2lwHcRK5b/exec';
-  const machine_kind = eq.type;
-  // currentModalId 格式如 TR-42，去掉 type 前綴只傳數字部分，避免寫成 TR-TR-42
-  const number = currentModalId.startsWith(machine_kind + '-') ? currentModalId.slice(machine_kind.length + 1) : currentModalId;
-  const params = new URLSearchParams({
-    action:'write', machine_kind, number, status:newStatus, process:note||'網頁更新', crew
-  });
-  fetch(`${SHEET_URL}?${params}`, { method: 'GET', mode: 'no-cors' });
+    // 快取
+    EQUIPMENT_HISTORY[id] = allRows.map(r=>({
+      status:  r.status,
+      time:    new Date(r.date).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+      dur:     '-',
+      author:  r.crew || '-',
+      fault:   r.process || '-',
+      action:  '-',
+      notes:   r.process || '-'
+    }));
 
-  // 更新 Modal 標題顯示
-  renderModalHistory(currentModalId);
-
-  // 重新渲染監控頁面
-  buildMonitor();
-  buildDashboard();
+    renderModalHistory(id);
+  } catch(err){
+    document.getElementById('modal-history-rows').innerHTML=
+      `<div style="color:#f87171;font-size:12px;padding:12px;text-align:center">載入失敗：${err.message}</div>`;
+  }
 }
 
 function renderModalHistory(id){
-  const HISTORY_DETAIL = EQUIPMENT_HISTORY[id] || [
-    {status:'Out Of Service',time:'Jun 16, 2026, 01:48 AM',dur:'-',author:'luis.salazar',
-     notes:'引擎異常停機，等待搶修人員到場',fault:'引擎無法啟動',action:'通報搶修，設置警示'},
-    {status:'Emergency Maintenance',time:'Jun 15, 2026, 08:22 PM',dur:'5.4',author:'esteban.chiari',
-     notes:'更換燃油濾清器及噴油嘴',fault:'燃油系統堵塞',action:'更換燃油濾清器'},
-    {status:'Running',time:'Jun 15, 2026, 07:40 PM',dur:'0.6',author:'hazael.peñafiel',
-     notes:'正常作業中',fault:'-',action:'-'},
-    {status:'Available',time:'Jun 15, 2026, 06:51 PM',dur:'0.8',author:'ricardo.rodriguez',
-     notes:'完成日常保養，待命中',fault:'-',action:'完成日常檢查'},
-  ];
+  const HISTORY_DETAIL = EQUIPMENT_HISTORY[id];
+
+  if(!HISTORY_DETAIL){
+    document.getElementById('modal-history-rows').innerHTML=
+      '<div style="color:#4b5563;font-size:12px;padding:12px;text-align:center">載入中...</div>';
+    return;
+  }
+
+  if(HISTORY_DETAIL.length===0){
+    document.getElementById('modal-history-rows').innerHTML=
+      '<div style="color:#4b5563;font-size:12px;padding:12px;text-align:center">查無歷史記錄</div>';
+    return;
+  }
 
   document.getElementById('modal-history-rows').innerHTML=HISTORY_DETAIL.map((h,i)=>{
     const cfg=STATUS_CFG[h.status]||STATUS_CFG['Out Of Service'];
+    const borderColor = cfg.pill==='sp-em'?'#fb923c':cfg.pill==='sp-av'?'#4ade80':cfg.pill==='sp-ru'?'#60a5fa':cfg.pill==='sp-dm'?'#f87171':'#475569';
     return `<div class="history-row" onclick="toggleHistoryDetail(${i})" style="cursor:pointer;flex-direction:column;align-items:flex-start;gap:0">
       <div style="display:flex;align-items:center;gap:12px;width:100%;padding:2px 0">
         <div class="h-status"><span class="status-pill ${cfg.pill}">${h.status}</span></div>
@@ -2072,12 +2116,11 @@ function renderModalHistory(id){
         <div class="h-author">${h.author}</div>
         <div style="margin-left:auto;color:#4b5563;font-size:12px">▶</div>
       </div>
-      <div id="hist-detail-${i}" style="display:none;width:100%;margin-top:10px;padding:12px;background:#1c2128;border-radius:8px;border-left:3px solid ${cfg.pill==='sp-em'?'#fb923c':cfg.pill==='sp-av'?'#4ade80':cfg.pill==='sp-ru'?'#60a5fa':cfg.pill==='sp-dm'?'#f87171':'#475569'}">
+      <div id="hist-detail-${i}" style="display:none;width:100%;margin-top:10px;padding:12px;background:#1c2128;border-radius:8px;border-left:3px solid ${borderColor}">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
-          <div><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase">故障原因</div><div style="color:#e2e8f0">${h.fault||'-'}</div></div>
-          <div><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase">處理動作</div><div style="color:#e2e8f0">${h.action||'-'}</div></div>
+          <div><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase">描述</div><div style="color:#e2e8f0">${h.fault||'-'}</div></div>
+          <div><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase">人員</div><div style="color:#e2e8f0">${h.author||'-'}</div></div>
         </div>
-        <div style="margin-top:10px;font-size:12px"><div style="color:#6b7280;margin-bottom:3px;font-size:11px;text-transform:uppercase">備註</div><div style="color:#94a3b8">${h.notes||'-'}</div></div>
       </div>
     </div>`;
   }).join('');
